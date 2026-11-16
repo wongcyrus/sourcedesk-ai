@@ -68,8 +68,11 @@ class WindowsPackageTests(unittest.TestCase):
         }
         (data / "docs").mkdir()
         (data / "docs/index.html").write_text("<h1>Reference</h1>")
+        (data / "originals").mkdir()
+        (data / "originals/reference.pdf").write_bytes(b"PDF source")
         (data / "chunks.json").write_text(json.dumps([
-            {"id": 1, "title": "Reference", "text": "A local reference.", "localPath": "docs/index.html"}
+            {"id": 1, "title": "Reference", "text": "A local reference.", "localPath": "docs/index.html",
+             "originalPath": "originals/reference.pdf#page=1"}
         ]))
         (data / "vectors.f32").write_bytes(b"\0" * (768 * 4))
         (data / "keywords.json").write_text(json.dumps({
@@ -92,7 +95,8 @@ class WindowsPackageTests(unittest.TestCase):
         (self.pack / "manifest.json").write_text(json.dumps(self.manifest))
         self.subject["files"] = {
             name: hashlib.sha256((self.pack / name).read_bytes()).hexdigest()
-            for name in ("manifest.json", "chunks.json", "vectors.f32", "keywords.json", "docs/index.html")
+            for name in ("manifest.json", "chunks.json", "vectors.f32", "keywords.json", "docs/index.html",
+                         "originals/reference.pdf")
         }
         (self.pack / "subject.json").write_text(json.dumps(self.subject))
 
@@ -115,11 +119,18 @@ class WindowsPackageTests(unittest.TestCase):
             base = f"http://127.0.0.1:{instance.server_port}"
             with urllib.request.urlopen(base + "/healthz") as response:
                 self.assertEqual(json.load(response)["application"], "sourcedesk-ai")
-            for name, mime in (("OfflineVectorSearch-min.js", "text/javascript"), ("vendor/runtime.wasm", "application/wasm")):
+            for name, mime, body in (("OfflineVectorSearch-min.js", "text/javascript", b"ok"),
+                                     ("vendor/runtime.wasm", "application/wasm", b"ok"),
+                                     (f"subjects/{self.installed.name}/docs/index.html", "text/html",
+                                      b"<h1>Reference</h1>"),
+                                     (f"subjects/{self.installed.name}/originals/reference.pdf",
+                                      "application/pdf", b"PDF source")):
                 with urllib.request.urlopen(base + "/" + name) as response:
                     self.assertEqual(response.headers["Content-Type"], mime)
                     self.assertEqual(response.headers["Cache-Control"], "no-cache")
-                    self.assertEqual(response.read(), b"ok")
+                    if "/docs/" in name:
+                        self.assertIn("script-src 'none'", response.headers["Content-Security-Policy"])
+                    self.assertEqual(response.read(), body)
         finally:
             instance.shutdown()
             instance.server_close()

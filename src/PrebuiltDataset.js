@@ -1,4 +1,4 @@
-import { isPackPath, localDocumentUrl } from './Subject.js';
+import { isPackPath, localDocumentUrl, localOriginalUrl } from './Subject.js';
 
 async function fetchChecked(url, fetcher) {
   const response = await fetcher(url);
@@ -47,6 +47,7 @@ export async function fetchPrebuiltData(manifest, baseUrl, fetcher = fetch) {
       throw new Error('Invalid prebuilt dataset chunk or source citation.');
     }
     if (chunk.localPath !== undefined) localDocumentUrl(chunk.localPath, baseUrl);
+    if (chunk.originalPath !== undefined) localOriginalUrl(chunk.originalPath, baseUrl);
     ids.add(chunk.id);
   }
   const littleEndian = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;

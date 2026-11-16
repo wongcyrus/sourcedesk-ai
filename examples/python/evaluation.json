@@ -1,0 +1,5 @@
+[
+  { "query": "How do I define a function?", "expectedTitle": "Defining Functions" },
+  { "query": "How do list comprehensions work?", "expectedTitle": "Data Structures" },
+  { "query": "How can I handle an exception?", "expectedTitle": "Errors and Exceptions" }
+]

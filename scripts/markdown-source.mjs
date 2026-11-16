@@ -12,18 +12,29 @@ export function documentPage(title, content, attribution, home = '../index.html'
   return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="${policy}"><title>${escapeHtml(title)}</title><style>body{max-width:1000px;margin:2em auto;padding:0 1em;font:17px/1.6 system-ui}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f3f3;padding:1em}img{max-width:100%}table{border-collapse:collapse;display:block;overflow:auto}td,th{border:1px solid #ccc;padding:.5em}h1,h2,h3,h4{scroll-margin-top:1em}</style></head><body><nav><a href="${home}">Documents</a></nav>${content}<footer><hr>${escapeHtml(attribution)}</footer></body></html>`;
 }
 
-export async function markdownSource(contentDirectory, output, config) {
+export async function markdownSource(contentDirectory, output, config, options = {}) {
   const content = await realpath(contentDirectory);
-  const files = [];
-  async function walk(directory) {
-    for (const entry of (await readdir(directory, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
-      if (entry.isSymbolicLink()) throw new Error('Content must not contain symbolic links.');
-      const path = resolve(directory, entry.name);
-      if (entry.isDirectory()) await walk(path);
-      else if (/\.md$/i.test(entry.name)) files.push(path);
+  let files = [];
+  if (options.files) {
+    files = await Promise.all(options.files.map(async path => {
+      const resolved = await realpath(path);
+      if (!resolved.startsWith(content + sep) || !/\.md$/i.test(resolved)) {
+        throw new Error(`Markdown file is outside the configured content folder: ${path}`);
+      }
+      return resolved;
+    }));
+  } else {
+    async function walk(directory) {
+      for (const entry of (await readdir(directory, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+        if (entry.isSymbolicLink()) throw new Error('Content must not contain symbolic links.');
+        const path = resolve(directory, entry.name);
+        if (entry.isDirectory()) await walk(path);
+        else if (/\.md$/i.test(entry.name)) files.push(path);
+      }
     }
+    await walk(content);
   }
-  await walk(content);
+  files.sort((a, b) => a.localeCompare(b));
   if (!files.length) throw new Error('No Markdown documents found in the content folder.');
   const pages = new Map(files.map(file => [
     file, `docs/${createHash('sha256').update(relative(content, file).split(sep).join('/')).digest('hex').slice(0, 20)}.html`
@@ -93,8 +104,14 @@ export async function markdownSource(contentDirectory, output, config) {
     await writeFile(resolve(output, path), documentPage(title, document.body.innerHTML, config.attribution, 'index.html'));
     index.push({ title, path });
   }
+  if (options.writeIndex !== false) await writeDocumentIndex(output, config, index);
+  return { sections, documents: index };
+}
+
+export async function writeDocumentIndex(output, config, documents) {
+  const index = [...documents].sort((a, b) => a.title.localeCompare(b.title));
   await writeFile(resolve(output, 'docs/index.html'), documentPage(config.title,
     `<h1>${escapeHtml(config.title)}</h1><ul>${index.map(page =>
-      `<li><a href="${page.path.slice(5)}">${escapeHtml(page.title)}</a></li>`).join('')}</ul>`, config.attribution, 'index.html'));
-  return { sections };
+      `<li><a href="${page.path.slice(5)}">${escapeHtml(page.title)}</a></li>`).join('')}</ul>`,
+    config.attribution, 'index.html'));
 }

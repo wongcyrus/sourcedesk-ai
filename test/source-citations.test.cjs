@@ -242,6 +242,7 @@ test('subject chunks use explicit pack-local paths without inventing original UR
   const fixture = staticFixture('embeddinggemma');
   delete fixture.chunks[0].sourceUrl;
   fixture.chunks[0].localPath = 'docs/biology.html#cells';
+  fixture.chunks[0].originalPath = 'originals/biology.pdf#page=4';
   fixture.chunks[1].localPath = 'docs/biology.html#energy';
   const options = {
     offline: true, assetBaseUrl: 'http://localhost:8080/',
@@ -251,9 +252,14 @@ test('subject chunks use explicit pack-local paths without inventing original UR
   assert.equal(search.prebuiltData.chunks[0].sourceUrl,
     'http://localhost:8080/subjects/biology-abc/docs/biology.html#cells');
   assert.equal(search.prebuiltData.chunks[0].originalSourceUrl, undefined);
+  assert.equal(search.prebuiltData.chunks[0].originalUrl,
+    'http://localhost:8080/subjects/biology-abc/originals/biology.pdf#page=4');
   assert.equal(search.prebuiltData.chunks[1].originalSourceUrl, fixture.chunks[1].sourceUrl);
   fixture.chunks[0].localPath = '../other/docs/biology.html';
   await assert.rejects(staticSearch(fixture, undefined, options), /Invalid bundled document/);
+  fixture.chunks[0].localPath = 'docs/biology.html';
+  fixture.chunks[0].originalPath = '../biology.pdf';
+  await assert.rejects(staticSearch(fixture, undefined, options), /Invalid bundled original document/);
 });
 
 test('static dataset loading skips IndexedDB and document embedding, returning source anchors', async () => {

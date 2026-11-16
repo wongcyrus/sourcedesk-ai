@@ -1,0 +1,10 @@
+{
+  "id": "mixed-documents",
+  "title": "Mixed Documents",
+  "description": "A starter pack for Markdown, PDF and Word reference material.",
+  "language": "en",
+  "attribution": "Add the original authors and redistribution licenses for your materials.",
+  "examples": ["Summarize the main points in these references."],
+  "answerStyle": "Use plain language and cite the source passage.",
+  "source": { "format": "documents", "path": "content" }
+}

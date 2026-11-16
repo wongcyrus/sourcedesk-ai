@@ -83,9 +83,11 @@ def read_subject(root, release=None):
             raise ValueError("Dataset files must be checksummed files in the subject root.")
         data_names.add(name)
     for name in files:
+        extension = Path(name).suffix.lower()
         if name not in {"manifest.json", *data_names} and not (
-            name.startswith("docs/") and Path(name).suffix.lower() not in
-            {".js", ".mjs", ".wasm", ".onnx", ".litertlm", ".exe", ".dll", ".key", ".pem", ".download"}
+            (name.startswith("docs/") and extension not in
+             {".js", ".mjs", ".wasm", ".onnx", ".litertlm", ".exe", ".dll", ".key", ".pem", ".download"}) or
+            (name.startswith("originals/") and extension in {".pdf", ".docx"})
         ):
             raise ValueError(f"Subject packs cannot include application code or models: {name}")
     count = manifest.get("count")
@@ -106,7 +108,7 @@ def read_subject(root, release=None):
     for chunk in chunks:
         if not isinstance(chunk, dict) or type(chunk.get("id")) is not int or chunk["id"] in ids or not all(
             isinstance(chunk.get(key), str) for key in ("title", "text", "localPath")
-        ):
+        ) or (chunk.get("originalPath") is not None and not isinstance(chunk["originalPath"], str)):
             raise ValueError("Invalid subject chunk.")
         ids.add(chunk["id"])
         document, *fragment = chunk["localPath"].split("#")
@@ -117,6 +119,13 @@ def read_subject(root, release=None):
             not isinstance(chunk["sourceUrl"], str) or not re.match(r"^https?://", chunk["sourceUrl"])
         ):
             raise ValueError("Invalid original source URL.")
+        if chunk.get("originalPath") is not None:
+            original, *original_fragment = chunk["originalPath"].split("#")
+            if len(original_fragment) > 1 or (
+                original_fragment and not re.fullmatch(r"page=[1-9]\d*", original_fragment[0])
+            ) or not original.startswith("originals/") or Path(original).suffix.lower() not in {".pdf", ".docx"} or original not in files:
+                raise ValueError("Chunk references an unbundled original document.")
+            pack_path(root, original)
     keywords = json.loads((root / manifest["keywords"]).read_text(encoding="utf-8"))
     if not isinstance(keywords, dict) or keywords.get("format") != "vectorsearch-keywords-v1" or keywords.get("count") != count or (
         not isinstance(keywords.get("lengths"), list) or len(keywords["lengths"]) != count

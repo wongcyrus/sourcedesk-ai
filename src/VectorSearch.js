@@ -6,7 +6,7 @@ import { CosineSimilarity } from './CosineSimilarity.js';
 import { EmbeddingModel } from './EmbeddingModel.js';
 import { fetchPrebuiltManifest, fetchPrebuiltData } from './PrebuiltDataset.js';
 import { searchKeywords, rankHybridResults } from './KeywordSearch.js';
-import { localDocumentUrl } from './Subject.js';
+import { localDocumentUrl, localOriginalUrl } from './Subject.js';
 
 /**
  * VectorSearch - A master orchestrator class for the RAG system.
@@ -55,7 +55,8 @@ export class VectorSearch {
           return {
             ...chunk,
             originalSourceUrl: chunk.sourceUrl,
-            sourceUrl: localDocumentUrl(chunk.localPath, options.packBaseUrl).href
+            sourceUrl: localDocumentUrl(chunk.localPath, options.packBaseUrl).href,
+            ...(chunk.originalPath ? { originalUrl: localOriginalUrl(chunk.originalPath, options.packBaseUrl).href } : {})
           };
         }
         const original = new URL(chunk.sourceUrl);

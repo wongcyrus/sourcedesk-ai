@@ -36,6 +36,10 @@ npm run prepare:models
 # Build content on the maintainer's CPU, reusing installed embedding weights.
 npm run build:subject -- --subject examples/networking/subject.json
 
+# Prepare and build the official Python tutorial as a separate subject pack.
+npm run prepare:python-source
+npm run build:subject -- --subject examples/python/subject.json
+
 # Validate, install and activate the completed content pack.
 npm run activate:subject -- --pack data/networking
 
@@ -53,14 +57,15 @@ after a page reload, even when weights are cached.
 
 ## Create your own subject
 
-Copy an example configuration and create a folder of Markdown documents:
+Copy an example configuration and create a folder of source documents:
 
 ```text
 my-course/
   subject.json
   content/
     introduction.md
-    chapter-one.md
+    chapter-one.pdf
+    notes.docx
     images/
       diagram.png
 ```
@@ -74,7 +79,7 @@ my-course/
   "attribution": "Your author and redistribution license information.",
   "examples": ["What are the main concepts?"],
   "answerStyle": "Explain concepts plainly with supported examples.",
-  "source": { "format": "markdown", "path": "content" }
+  "source": { "format": "documents", "path": "content" }
 }
 ```
 
@@ -93,19 +98,35 @@ Reload the page to start a new conversation using the new subject. Old packs
 can remain installed or be removed after another pack is active. The shared
 application, weights and checksum-keyed browser cache are unchanged.
 
-Markdown headings become stable citation anchors. Fenced code blocks retain
-their whitespace. Relative `.md` links and local PNG/JPEG/GIF/WebP/AVIF images
-are bundled; remote links are disabled and remote images are omitted. Raw HTML
-is displayed as text, not executed. PDF, Word, OCR and general website crawling
-are not supported: convert and review those documents as Markdown first.
+The `documents` source accepts `.md`, `.html`, `.htm`, `.pdf` and `.docx` files,
+including mixed folders. Markdown, HTML and Word headings become citation
+anchors; PDF citations target extracted-text pages. HTML is sanitized and
+internal links are rewritten to local pack pages. Safe local HTML views are
+generated for every source, so the app's reader stays the same. Packs retain
+original PDFs and Word files and offer a separate open/download link. PDF
+extraction requires selectable text; scanned pages need OCR first. Word
+conversion preserves common text, headings and tables; complex layout may
+differ from Word. DOCX embedded images are included only when safely
+representable as small supported data images. Markdown keeps the existing
+support for local images and relative Markdown links. Remote links are
+disabled, remote images are omitted, and raw HTML in Markdown is displayed as
+text rather than executed.
 
-The examples include `networking`, `biology` and the existing Kubernetes
-print-page adapter:
+The subject examples include `networking`, `biology`, and `python`, plus the
+existing Kubernetes print-page adapter:
 
 ```sh
 npm run build:subject -- --subject examples/biology/subject.json
+npm run build:subject -- --subject examples/python/subject.json
 npm run build:subject -- --subject examples/kubernetes/subject.json
 ```
+
+The Python example uses the official Python 3.15 tutorial, downloaded by
+`npm run prepare:python-source` into an ignored local source directory. Its
+documentation is under the PSF License Version 2.0. Build it as an
+independently switchable pack after preparing the source. Activate it with
+`npm run activate:subject -- --pack data/python`. Only one subject is active
+at a time; activation leaves the shared application and models unchanged.
 
 Keyword tokenization currently targets English. Evaluate retrieval and answer
 quality for other languages rather than assuming equivalent results.
@@ -195,8 +216,9 @@ npm test
 npm run test:windows
 npm run build
 
-# Real CPU embedding/retrieval evaluation for either example pack.
+# Real CPU embedding/retrieval evaluation for example packs.
 npm run test:retrieval -- data/networking examples/networking/evaluation.json
+npm run test:retrieval -- data/python examples/python/evaluation.json
 ```
 
 Archives are written to `dist/`. The app archive contains neither subject packs

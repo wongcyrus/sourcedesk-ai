@@ -6,6 +6,7 @@ import { AutoModel, AutoTokenizer, env } from '@huggingface/transformers';
 import { chunkSections, documentInput, buildKeywordIndex, DOCUMENT_PREFIX, QUERY_PREFIX } from './corpus.mjs';
 import { EMBEDDING_MODEL, validateSubject } from '../src/Subject.js';
 import { markdownSource } from './markdown-source.mjs';
+import { documentSource } from './document-source.mjs';
 
 const { values } = parseArgs({
   options: {
@@ -43,7 +44,9 @@ validateSubject({
   ...metadata, version: '0'.repeat(16),
   files: { 'manifest.json': '0'.repeat(64), 'docs/index.html': '0'.repeat(64) }
 });
-if (!['markdown', 'kubernetes'].includes(config.source?.format)) throw new Error('Supported sources: markdown, kubernetes.');
+if (!['markdown', 'documents', 'kubernetes'].includes(config.source?.format)) {
+  throw new Error('Supported sources: markdown, documents, kubernetes.');
+}
 values.out ||= join('data', config.id);
 const modelUrl = EMBEDDING_MODEL.url;
 const batchSize = Number(values['batch-size']);
@@ -90,6 +93,7 @@ try {
 }
 await writeFile(ownershipPath, JSON.stringify({ id: config.id }));
 await rm(resolve(values.out, 'docs'), { recursive: true, force: true });
+await rm(resolve(values.out, 'originals'), { recursive: true, force: true });
 let extracted;
 let sourceMetadata = {};
 if (config.source.format === 'kubernetes') {
@@ -106,9 +110,12 @@ if (config.source.format === 'kubernetes') {
     writeFile(join(values.out, 'sitemap.xml'), sitemap)
   ]);
   sourceMetadata = { sourceUrl: SOURCE_URL, sourceSha256: createHash('sha256').update(html).digest('hex') };
-} else {
+} else if (config.source.format === 'markdown') {
   if (typeof config.source.path !== 'string') throw new Error('Markdown source requires a content path.');
   extracted = await markdownSource(resolve(dirname(configPath), config.source.path), values.out, config);
+} else {
+  if (typeof config.source.path !== 'string') throw new Error('Document sources require a content path.');
+  extracted = await documentSource(resolve(dirname(configPath), config.source.path), values.out, config);
 }
 const { sections, unresolvedPages = [] } = extracted;
 console.log(`Extracted ${sections.length} sections; loading the offline embedding model...`);
@@ -254,6 +261,11 @@ async function addDirectory(directory) {
 }
 await Promise.all(['manifest.json', manifest.chunks, manifest.vectors, manifest.keywords].map(file => addFile(join(values.out, file))));
 await addDirectory(join(values.out, 'docs'));
+try {
+  await addDirectory(join(values.out, 'originals'));
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+}
 const packVersion = createHash('sha256').update(JSON.stringify(metadata))
   .update(JSON.stringify(Object.entries(files).sort())).digest('hex').slice(0, 16);
 const subject = validateSubject({ ...metadata, version: packVersion, files });

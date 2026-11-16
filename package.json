@@ -14,6 +14,7 @@
     "build:subject": "node scripts/build-subject.mjs",
     "test": "node --experimental-vm-modules --test",
     "test:retrieval": "node scripts/evaluate-subject.mjs",
+    "prepare:python-source": "python3 examples/python/prepare_source.py",
     "prepare:offline": "node scripts/prepare-offline.mjs",
     "prepare:models": "node scripts/prepare-models.mjs",
     "activate:subject": "python3 windows/activate-subject.py",
@@ -31,7 +32,9 @@
     "esbuild": "^0.25.0",
     "http-server": "^14.1.1",
     "linkedom": "^0.18.12",
-    "markdown-it": "15.0.3"
+    "mammoth": "^1.13.0",
+    "markdown-it": "15.0.3",
+    "pdfjs-dist": "^6.5.438"
   },
   "overrides": {
     "protobufjs": "^7.6.3",

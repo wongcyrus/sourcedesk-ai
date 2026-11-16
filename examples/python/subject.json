@@ -1,0 +1,14 @@
+{
+  "id": "python",
+  "title": "Python Programming",
+  "description": "A beginner course using the official Python tutorial.",
+  "language": "en",
+  "attribution": "Python Software Foundation, Python 3.15 Tutorial. PSF License Version 2.0. https://docs.python.org/3/license.html",
+  "examples": [
+    "How do I define and call a function?",
+    "What is the difference between a list and a tuple?",
+    "How do exceptions work in Python?"
+  ],
+  "answerStyle": "Teach step by step for a beginner. Use runnable Python examples grounded in the tutorial, explain errors clearly, and cite the relevant lesson.",
+  "source": { "format": "documents", "path": "content/tutorial" }
+}

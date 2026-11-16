@@ -14,6 +14,7 @@ const READER = document.getElementById('document-reader');
 const DOCUMENT_EMPTY = document.getElementById('document-empty');
 const SOURCE_CONTEXT = document.getElementById('source-context');
 const OPEN_DOCUMENT = document.getElementById('open-document');
+const OPEN_ORIGINAL = document.getElementById('open-original');
 const WORKSPACE = document.getElementById('workspace');
 const CHAT_TAB = document.getElementById('chat-tab');
 const DOCUMENTS_TAB = document.getElementById('documents-tab');
@@ -45,6 +46,15 @@ function openDocument(source) {
   READER.hidden = false;
   DOCUMENT_EMPTY.hidden = true;
   OPEN_DOCUMENT.href = url.href;
+  if (source.originalUrl) {
+    OPEN_ORIGINAL.href = source.originalUrl;
+    OPEN_ORIGINAL.textContent = source.originalUrl.toLowerCase().includes('.pdf') ?
+      'Open original PDF' : 'Download original Word document';
+    OPEN_ORIGINAL.hidden = false;
+  } else {
+    OPEN_ORIGINAL.removeAttribute('href');
+    OPEN_ORIGINAL.hidden = true;
+  }
   for (const article of RESULTS.children) {
     article.classList.toggle('source-active', article.dataset.source === url.href);
   }
@@ -57,6 +67,8 @@ function selectTurn(turn) {
   RESULTS.replaceChildren();
   READER.hidden = true;
   READER.removeAttribute('src');
+  OPEN_ORIGINAL.removeAttribute('href');
+  OPEN_ORIGINAL.hidden = true;
   DOCUMENT_EMPTY.hidden = false;
   OPEN_DOCUMENT.href = documentsUrl.href;
   for (const [index, result] of turn.sources.entries()) {

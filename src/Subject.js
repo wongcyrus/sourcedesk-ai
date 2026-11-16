@@ -48,6 +48,16 @@ export function localDocumentUrl(path, packBaseUrl) {
   return new URL(path, packBaseUrl);
 }
 
+export function localOriginalUrl(path, packBaseUrl) {
+  const [file, fragment, ...extra] = typeof path === 'string' ? path.split('#') : [];
+  if (!isPackPath(file) || !file.startsWith('originals/') ||
+      !['.pdf', '.docx'].includes(file.slice(file.lastIndexOf('.')).toLowerCase()) ||
+      extra.length || (fragment !== undefined && !/^page=[1-9]\d*$/.test(fragment))) {
+    throw new Error('Invalid bundled original document path.');
+  }
+  return new URL(path, packBaseUrl);
+}
+
 export async function loadActiveSubject(assetBaseUrl, fetcher = fetch) {
   const base = new URL(assetBaseUrl);
   const read = async url => {

@@ -43,6 +43,8 @@ class Handler(SimpleHTTPRequestHandler):
         ".js": "text/javascript", ".mjs": "text/javascript",
         ".wasm": "application/wasm", ".f32": "application/octet-stream",
         ".onnx": "application/octet-stream", ".litertlm": "application/octet-stream",
+        ".pdf": "application/pdf",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     }
 
     def __init__(self, *args, release=None, **kwargs):
