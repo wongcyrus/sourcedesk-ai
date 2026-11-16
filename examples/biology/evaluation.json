@@ -1,0 +1,5 @@
+[
+  { "query": "What is the function of a cell membrane?", "expectedTitle": "Cells" },
+  { "query": "How are plant and animal cells different?", "expectedTitle": "Plant and animal cells" },
+  { "query": "Where does photosynthesis take place?", "expectedTitle": "Photosynthesis" }
+]

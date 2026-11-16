@@ -1,0 +1,10 @@
+{
+  "id": "networking",
+  "title": "Networking Fundamentals",
+  "description": "Learn core networking concepts from a small local reference.",
+  "language": "en",
+  "attribution": "SourceDesk AI example materials, Apache-2.0.",
+  "examples": ["What is a subnet?", "How does DNS resolve a name?"],
+  "answerStyle": "Explain concepts plainly and use worked examples when the sources support them.",
+  "source": { "format": "markdown", "path": "content" }
+}

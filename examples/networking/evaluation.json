@@ -1,0 +1,5 @@
+[
+  { "query": "What is a subnet mask for a /24 network?", "expectedTitle": "Subnet masks" },
+  { "query": "How does DNS resolve a domain name?", "expectedTitle": "Resolution" },
+  { "query": "Why do DNS resolvers cache records?", "expectedTitle": "Caching" }
+]

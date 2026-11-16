@@ -1,0 +1,10 @@
+{
+  "id": "kubernetes",
+  "title": "Kubernetes Documentation",
+  "description": "Offline Kubernetes documentation with cited AI answers.",
+  "language": "en",
+  "attribution": "Kubernetes Authors. Documentation licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/.",
+  "examples": ["How do I create a Deployment?", "How do network policies control egress?"],
+  "answerStyle": "Include a practical command or YAML example only when supported by the sources.",
+  "source": { "format": "kubernetes" }
+}

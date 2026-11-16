@@ -1,0 +1,10 @@
+{
+  "id": "biology",
+  "title": "Biology Basics",
+  "description": "A small nontechnical subject pack demonstrating reusable offline AI.",
+  "language": "en",
+  "attribution": "SourceDesk AI example materials, Apache-2.0.",
+  "examples": ["What is a cell?", "How are plant and animal cells different?"],
+  "answerStyle": "Explain concepts in plain language. Do not suggest software commands.",
+  "source": { "format": "markdown", "path": "content" }
+}

@@ -1,7 +1,7 @@
 /********************************************************************* 
  * A simple vector store using IndexedDB for persistence.
  * Coded by Jason Mayes 2026. 
- * Modified for kubernetes-webai-rag: preserve source citations in stored records.
+ * Extended for SourceDesk AI: preserve source citations in stored records.
  *--------------------------------------------------------------------
  * Connect with me on social if aquestions or comments:
  *

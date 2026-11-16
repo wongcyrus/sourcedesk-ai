@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
-import { chunkSections, extractSections, documentInput, buildKeywordIndex } from '../scripts/kubernetes-chunks.mjs';
+import { chunkSections, documentInput, buildKeywordIndex } from '../scripts/corpus.mjs';
+import { extractSections } from '../examples/kubernetes/sections.mjs';
 import { searchKeywords, rankHybridResults } from '../src/KeywordSearch.js';
 
 const pageUrl = 'https://kubernetes.io/docs/concepts/workloads/controllers/deployment/';

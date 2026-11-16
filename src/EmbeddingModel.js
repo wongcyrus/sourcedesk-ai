@@ -1,7 +1,7 @@
 /**
  * Loads query embedding models with Transformers.js.
  * Coded by Jason Mayes 2026.
- * Modified for kubernetes-webai-rag: pinned offline ONNX EmbeddingGemma support.
+ * Extended for SourceDesk AI: pinned offline ONNX EmbeddingGemma support.
  */
 export class EmbeddingModel {
   constructor(modelRuntime, modelConfig = {}) {

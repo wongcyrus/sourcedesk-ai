@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { AutoModel, AutoTokenizer, env } from '@huggingface/transformers';
-import { searchKeywords, rankHybridResults } from '../src/KeywordSearch.js';
-import { documentInput } from './kubernetes-chunks.mjs';
+import { searchKeywords, rankHybridResults } from '../../src/KeywordSearch.js';
+import { documentInput } from '../../scripts/corpus.mjs';
 
 const root = process.argv[2] || 'data/kubernetes';
 const manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));

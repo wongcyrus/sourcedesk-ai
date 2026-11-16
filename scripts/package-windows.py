@@ -4,11 +4,15 @@ import json
 import shutil
 import urllib.request
 import zipfile
+import sys
 from pathlib import Path, PurePosixPath
 
 
 ROOT = Path(__file__).resolve().parents[1]
-NAME = "kubernetes-webai-rag"
+sys.path.insert(0, str(ROOT / "windows"))
+from subject_pack import pack_path, read_subject
+
+NAME = "sourcedesk-ai"
 PYTHON_URL = "https://www.python.org/ftp/python/3.14.4/python-3.14.4-embeddable-amd64.zip"
 PYTHON_SHA256 = "fa2e63e9f0607e34d8841cc8080641069b71d2bddb5a69fa30c24eb5599da9fe"
 ASSET_LIMIT = 2 * 1024**3
@@ -35,9 +39,9 @@ def python_runtime(cache):
 
 def application_files(root, release):
     paths = {root / name for name in (
-        "kubernetes.html", "index.html", "OfflineVectorSearch-min.js", "NOTICE", "release.json"
+        "index.html", "OfflineVectorSearch-min.js", "NOTICE", "release.json"
     )}
-    for directory in ("js", "css", "docs", "licenses", "vendor", release["embeddingModelPath"]):
+    for directory in ("js", "css", "licenses", "vendor"):
         folder = root / directory
         if not folder.resolve().is_relative_to(root.resolve()):
             raise ValueError(f"Invalid application directory: {directory}")
@@ -45,24 +49,49 @@ def application_files(root, release):
         if not members:
             raise ValueError(f"Missing application assets: {directory}")
         paths.update(members)
-    manifest_path = root / "data/kubernetes/manifest.json"
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("partial") or manifest["version"] != release["datasetVersion"]:
-        raise ValueError("Release metadata must match a complete corpus.")
-    paths.add(manifest_path)
-    for field in ("chunks", "vectors", "keywords"):
-        name = manifest[field]
-        if PurePosixPath(name).name != name or "\\" in name:
-            raise ValueError("Dataset filenames must stay in the data directory.")
-        paths.add(manifest_path.parent / name)
-    model = root / release["generationModelPath"]
-    paths.add(model.parent / "README.md")
     for path in paths:
         if not path.is_file() or path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
             raise ValueError(f"Missing or unsafe package input: {path}")
         if path.suffix.lower() in {".key", ".crt", ".csr", ".pem", ".pfx", ".p12", ".srl"} or path.name.endswith(".download"):
             raise ValueError(f"Temporary or credential file cannot be packaged: {path}")
     return sorted(paths)
+
+
+def model_files(root, release):
+    model = root / release["generationModelPath"]
+    if not model.resolve().is_relative_to(root) or not model.is_file() or model.is_symlink():
+        raise ValueError("Invalid model file.")
+    if model.stat().st_size != release["generationModel"]["bytes"] or digest(model) != release["generationModel"]["sha256"]:
+        raise ValueError("Gemma model is incomplete or has a checksum mismatch.")
+    embedding = root / release["embeddingModelPath"]
+    if not embedding.resolve().is_relative_to(root) or embedding.is_symlink():
+        raise ValueError("Invalid embedding model directory.")
+    paths = {model, model.parent / "README.md", *[path for path in embedding.rglob("*") if path.is_file()]}
+    if not any(path.suffix == ".onnx" for path in paths):
+        raise ValueError("Missing shared embedding model.")
+    for path in paths:
+        if not path.is_file() or path.is_symlink() or not path.resolve().is_relative_to(root):
+            raise ValueError(f"Missing or unsafe model input: {path}")
+        if path.name.endswith(".download"):
+            raise ValueError(f"Incomplete model input: {path}")
+    return sorted(paths)
+
+
+def package_subject(root, output):
+    root, output = root.resolve(), output.resolve()
+    subject, _ = read_subject(root)
+    output.mkdir(parents=True, exist_ok=True)
+    folder = f"{subject['id']}-{subject['version']}"
+    destination = output / f"{NAME}-subject-{folder}.zip"
+    temporary = destination.with_suffix(".zip.download")
+    with zipfile.ZipFile(temporary, "w", allowZip64=True) as archive:
+        for name in sorted(["subject.json", *subject["files"]]):
+            with pack_path(root, name).open("rb") as stream:
+                add_stream(archive, f"{folder}/{name}", stream)
+    finish_archive(temporary, destination)
+    destination.with_suffix(".zip.sha256").write_text(f"{digest(destination)}  {destination.name}\n", encoding="ascii")
+    print(f"{destination}: subject content only; no application code or model weights.")
+    return destination
 
 
 def add_stream(archive, name, stream):
@@ -86,7 +115,7 @@ def finish_archive(temporary, destination):
 def setup_script(version, archives):
     base = f"https://github.com/wongcyrus/{NAME}/releases/download/v{version}"
     lines = ["@echo off", "setlocal", 'cd /d "%~dp0"',
-             f"echo Kubernetes WebAI RAG v{version} setup",
+             f"echo SourceDesk AI v{version} setup",
              'if not exist ".downloads" mkdir ".downloads"']
     for index, archive in enumerate(archives):
         filename = archive.name
@@ -124,7 +153,9 @@ def setup_script(version, archives):
         ]
     for archive in archives:
         lines += [f'"%SystemRoot%\\System32\\tar.exe" -xf ".downloads\\{archive.name}"', "if errorlevel 1 goto failed"]
-    lines += [f'echo Ready. Open "{NAME}\\Start-RAG.cmd" to run offline.',
+    lines += [f'echo Shared application and models ready in "{NAME}".',
+              "echo For a new installation, extract a subject pack and drag its folder onto Activate-Subject.cmd.",
+              "echo Then run Start-RAG.cmd. Existing active subjects are preserved.",
               "pause", "exit /b 0", ":failed",
               "echo Setup failed. Check internet, disk space and the downloaded files. No server was started.",
               "pause", "exit /b 1"]
@@ -137,17 +168,16 @@ def package(root, output, cache):
     project = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
     if release["application"] != NAME or release["version"] != project["version"]:
         raise ValueError("Run npm run prepare:offline to update the release metadata.")
-    model = root / release["generationModelPath"]
-    if not model.resolve().is_relative_to(root) or not model.is_file() or model.is_symlink():
-        raise ValueError("Invalid model file.")
-    if model.stat().st_size != release["generationModel"]["bytes"] or digest(model) != release["generationModel"]["sha256"]:
-        raise ValueError("Gemma model is incomplete or has a checksum mismatch.")
+    models = model_files(root, release)
     files = application_files(root, release)
     runtime = python_runtime(cache)
     output.mkdir(parents=True, exist_ok=True)
     prefix = f"{NAME}-{release['version']}-windows-x64"
     app_archive = output / f"{prefix}-app.zip"
-    model_archive = output / f"{prefix}-model.zip"
+    model_archive = output / (
+        f"{NAME}-models-{release['embeddingModel']['revision'][:12]}-"
+        f"{release['generationModel']['sha256'][:12]}-windows-x64-model.zip"
+    )
     temporary = app_archive.with_suffix(".zip.download")
     with zipfile.ZipFile(temporary, "w", allowZip64=True) as archive:
         for path in files:
@@ -160,13 +190,15 @@ def package(root, output, cache):
                 if not entry.endswith("/"):
                     with python_zip.open(entry) as stream:
                         add_stream(archive, f"{NAME}/runtime/{entry}", stream)
-        for name in ("serve.py", "Start-RAG.cmd"):
+        for name in ("serve.py", "Start-RAG.cmd", "subject_pack.py", "activate-subject.py", "Activate-Subject.cmd"):
             with (ROOT / "windows" / name).open("rb") as stream:
                 add_stream(archive, f"{NAME}/{name}", stream)
     finish_archive(temporary, app_archive)
     temporary = model_archive.with_suffix(".zip.download")
-    with zipfile.ZipFile(temporary, "w", allowZip64=True) as archive, model.open("rb") as stream:
-        add_stream(archive, f"{NAME}/app/{model.relative_to(root).as_posix()}", stream)
+    with zipfile.ZipFile(temporary, "w", allowZip64=True) as archive:
+        for path in models:
+            with path.open("rb") as stream:
+                add_stream(archive, f"{NAME}/app/{path.relative_to(root).as_posix()}", stream)
     finish_archive(temporary, model_archive)
     archives = [app_archive, model_archive]
     with (output / "Setup-RAG.cmd").open("w", encoding="ascii", newline="") as stream:
@@ -184,5 +216,9 @@ if __name__ == "__main__":
     parser.add_argument("--site", type=Path, default=ROOT / "offline")
     parser.add_argument("--out", type=Path, default=ROOT / "dist")
     parser.add_argument("--cache", type=Path, default=ROOT / ".cache")
+    parser.add_argument("--subject", type=Path, help="Package only this built subject folder; no models required.")
     args = parser.parse_args()
-    package(args.site, args.out, args.cache)
+    if args.subject:
+        package_subject(args.subject, args.out)
+    else:
+        package(args.site, args.out, args.cache)

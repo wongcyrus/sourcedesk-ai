@@ -238,6 +238,24 @@ test('offline datasets retain original citations but navigate to localhost headi
     'http://localhost:8080/docs/concepts/workloads/controllers/deployment/#creating-a-deployment');
 });
 
+test('subject chunks use explicit pack-local paths without inventing original URLs for local materials', async () => {
+  const fixture = staticFixture('embeddinggemma');
+  delete fixture.chunks[0].sourceUrl;
+  fixture.chunks[0].localPath = 'docs/biology.html#cells';
+  fixture.chunks[1].localPath = 'docs/biology.html#energy';
+  const options = {
+    offline: true, assetBaseUrl: 'http://localhost:8080/',
+    packBaseUrl: 'http://localhost:8080/subjects/biology-abc/'
+  };
+  const search = await staticSearch(fixture, undefined, options);
+  assert.equal(search.prebuiltData.chunks[0].sourceUrl,
+    'http://localhost:8080/subjects/biology-abc/docs/biology.html#cells');
+  assert.equal(search.prebuiltData.chunks[0].originalSourceUrl, undefined);
+  assert.equal(search.prebuiltData.chunks[1].originalSourceUrl, fixture.chunks[1].sourceUrl);
+  fixture.chunks[0].localPath = '../other/docs/biology.html';
+  await assert.rejects(staticSearch(fixture, undefined, options), /Invalid bundled document/);
+});
+
 test('static dataset loading skips IndexedDB and document embedding, returning source anchors', async () => {
   const search = await staticSearch(staticFixture());
   const { embedding } = await search.getEmbedding('My query', 'query');
@@ -373,6 +391,7 @@ test('Gemma 4 streams grounded answers from local assets using a fresh conversat
     async createConversation(config) {
       assert.equal(config.preface.extra_context.enable_thinking, false);
       assert.match(config.preface.messages[0].content, /only the supplied documentation/);
+      assert.doesNotMatch(config.preface.messages[0].content, /Kubernetes|YAML/);
       return {
         async *sendMessageStreaming(prompt) {
           prompts.push(prompt);

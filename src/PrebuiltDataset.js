@@ -1,24 +1,26 @@
-async function fetchChecked(url) {
-  const response = await fetch(url);
+import { isPackPath, localDocumentUrl } from './Subject.js';
+
+async function fetchChecked(url, fetcher) {
+  const response = await fetcher(url);
   if (!response.ok) throw new Error(`Prebuilt dataset download failed (${response.status}): ${url}`);
   return response;
 }
 
-export async function fetchPrebuiltManifest(url) {
-  const response = await fetchChecked(url);
+export async function fetchPrebuiltManifest(url, fetcher = fetch) {
+  const response = await fetchChecked(url, fetcher);
   const manifest = await response.json();
   if (manifest.format !== 'vectorsearch-prebuilt-v1' || manifest.encoding !== 'float32-le' ||
       manifest.normalized !== true || !Number.isSafeInteger(manifest.count) || manifest.count < 1 ||
       !Number.isSafeInteger(manifest.dimensions) || manifest.dimensions < 1 ||
       !Number.isSafeInteger(manifest.count * manifest.dimensions * 4) ||
-      typeof manifest.chunks !== 'string' || typeof manifest.vectors !== 'string' ||
+      !isPackPath(manifest.chunks) || !isPackPath(manifest.vectors) ||
       !['transformersjs', 'embeddinggemma'].includes(manifest.model?.runtime) || typeof manifest.model.url !== 'string' ||
       (manifest.model.runtime === 'embeddinggemma' &&
         (manifest.dimensions !== 768 || manifest.model.url !== 'onnx-community/embeddinggemma-300m-ONNX' ||
           !['q4', 'q8', 'fp32'].includes(manifest.model.dtype) ||
           !Number.isInteger(manifest.model.sequenceLength) || manifest.model.sequenceLength < 32 ||
           manifest.model.sequenceLength > 2048)) ||
-      (manifest.keywords !== undefined && typeof manifest.keywords !== 'string') ||
+      (manifest.keywords !== undefined && !isPackPath(manifest.keywords)) ||
       !/^[a-f0-9]{40}$/.test(manifest.model.revision) ||
       typeof manifest.documentPrefix !== 'string' || typeof manifest.queryPrefix !== 'string') {
     throw new Error('Invalid or unsupported prebuilt dataset manifest.');
@@ -26,11 +28,11 @@ export async function fetchPrebuiltManifest(url) {
   return { manifest, baseUrl: response.url || new URL(url, globalThis.location?.href).href };
 }
 
-export async function fetchPrebuiltData(manifest, baseUrl) {
+export async function fetchPrebuiltData(manifest, baseUrl, fetcher = fetch) {
   const [chunks, buffer, keywordIndex] = await Promise.all([
-    fetchChecked(new URL(manifest.chunks, baseUrl)).then(response => response.json()),
-    fetchChecked(new URL(manifest.vectors, baseUrl)).then(response => response.arrayBuffer()),
-    manifest.keywords ? fetchChecked(new URL(manifest.keywords, baseUrl)).then(response => response.json()) : null
+    fetchChecked(new URL(manifest.chunks, baseUrl), fetcher).then(response => response.json()),
+    fetchChecked(new URL(manifest.vectors, baseUrl), fetcher).then(response => response.arrayBuffer()),
+    manifest.keywords ? fetchChecked(new URL(manifest.keywords, baseUrl), fetcher).then(response => response.json()) : null
   ]);
   if (!Array.isArray(chunks) || chunks.length !== manifest.count ||
       buffer.byteLength !== manifest.count * manifest.dimensions * 4) {
@@ -40,9 +42,11 @@ export async function fetchPrebuiltData(manifest, baseUrl) {
   for (const chunk of chunks) {
     if (!Number.isSafeInteger(chunk.id) || ids.has(chunk.id) ||
         typeof chunk.text !== 'string' || typeof chunk.title !== 'string' ||
-        typeof chunk.sourceUrl !== 'string' || !/^https?:\/\//.test(chunk.sourceUrl)) {
+        (chunk.sourceUrl !== undefined && (typeof chunk.sourceUrl !== 'string' || !/^https?:\/\//.test(chunk.sourceUrl))) ||
+        (chunk.sourceUrl === undefined && chunk.localPath === undefined)) {
       throw new Error('Invalid prebuilt dataset chunk or source citation.');
     }
+    if (chunk.localPath !== undefined) localDocumentUrl(chunk.localPath, baseUrl);
     ids.add(chunk.id);
   }
   const littleEndian = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;

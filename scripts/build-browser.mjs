@@ -26,9 +26,8 @@ export async function buildBrowser(directory = 'offline') {
     rename(join(root, 'js/answer-citations.js.download'), join(root, 'js/answer-citations.js'))
   ]);
   await Promise.all([
-    copyFile('web/kubernetes.html', join(root, 'kubernetes.html')),
-    copyFile('web/kubernetes.html', join(root, 'index.html')),
-    copyFile('web/js/kubernetes.js', join(root, 'js/kubernetes.js')),
+    copyFile('web/index.html', join(root, 'index.html')),
+    copyFile('web/js/app.js', join(root, 'js/app.js')),
     copyFile('web/css/style.css', join(root, 'css/style.css')),
     copyFile('LICENSE', join(root, 'licenses/project.txt')),
     copyFile('NOTICE', join(root, 'NOTICE')),

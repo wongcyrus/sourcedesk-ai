@@ -6,11 +6,12 @@ import { CosineSimilarity } from './CosineSimilarity.js';
 import { EmbeddingModel } from './EmbeddingModel.js';
 import { fetchPrebuiltManifest, fetchPrebuiltData } from './PrebuiltDataset.js';
 import { searchKeywords, rankHybridResults } from './KeywordSearch.js';
+import { localDocumentUrl } from './Subject.js';
 
 /**
  * VectorSearch - A master orchestrator class for the RAG system.
  * Coded by Jason Mayes 2026.
- * Modified for kubernetes-webai-rag: prebuilt offline retrieval and hybrid ranking.
+ * Extended for SourceDesk AI: prebuilt offline retrieval and hybrid ranking.
  */
 export class VectorSearch {
   /**
@@ -37,7 +38,7 @@ export class VectorSearch {
   static async fromPrebuiltDataset(manifestUrl, statusElement, options = {}) {
     const { manifest, baseUrl } = await fetchPrebuiltManifest(manifestUrl);
     if (options.offline && manifest.model.runtime !== 'embeddinggemma') {
-      throw new Error('The offline exam bundle requires the prebuilt EmbeddingGemma dataset.');
+      throw new Error('The offline bundle requires the prebuilt EmbeddingGemma dataset.');
     }
     const search = new VectorSearch({ ...manifest.model, ...options });
     if (manifest.documentPrefix !== search.embeddingModel.getTaskPrefix('document') ||
@@ -50,6 +51,13 @@ export class VectorSearch {
     ]);
     if (options.offline) {
       data.chunks = data.chunks.map(chunk => {
+        if (options.packBaseUrl) {
+          return {
+            ...chunk,
+            originalSourceUrl: chunk.sourceUrl,
+            sourceUrl: localDocumentUrl(chunk.localPath, options.packBaseUrl).href
+          };
+        }
         const original = new URL(chunk.sourceUrl);
         return {
           ...chunk,

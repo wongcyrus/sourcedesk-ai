@@ -1,4 +1,4 @@
-import { OfflineVectorSearch as VectorSearch, OfflineAnswerGenerator, buildRetrievalQuery } from '../OfflineVectorSearch-min.js';
+import { OfflineVectorSearch as VectorSearch, OfflineAnswerGenerator, buildRetrievalQuery, loadActiveSubject } from '../OfflineVectorSearch-min.js';
 import { renderAnswer } from './answer-citations.js';
 
 const FORM = document.getElementById('search-form');
@@ -17,8 +17,10 @@ const OPEN_DOCUMENT = document.getElementById('open-document');
 const WORKSPACE = document.getElementById('workspace');
 const CHAT_TAB = document.getElementById('chat-tab');
 const DOCUMENTS_TAB = document.getElementById('documents-tab');
-const MANIFEST_URL = new URL('../data/kubernetes/manifest.json', import.meta.url);
-const generator = new OfflineAnswerGenerator();
+const ASSET_BASE = new URL('../', import.meta.url);
+let generator;
+let packBaseUrl;
+let documentsUrl;
 let vectorSearch;
 let turns = [];
 let selectedTurn;
@@ -35,7 +37,7 @@ DOCUMENTS_TAB.addEventListener('click', () => showPanel('documents'));
 
 function openDocument(source) {
   const url = new URL(source.sourceUrl, location.href);
-  if (url.origin !== location.origin || !url.pathname.startsWith('/docs/')) {
+  if (url.origin !== location.origin || !url.pathname.startsWith(new URL('docs/', packBaseUrl).pathname)) {
     STATUS.innerText = 'Only bundled local documentation can be opened in this panel.';
     return;
   }
@@ -56,7 +58,7 @@ function selectTurn(turn) {
   READER.hidden = true;
   READER.removeAttribute('src');
   DOCUMENT_EMPTY.hidden = false;
-  OPEN_DOCUMENT.href = new URL('../docs/', import.meta.url).href;
+  OPEN_DOCUMENT.href = documentsUrl.href;
   for (const [index, result] of turn.sources.entries()) {
     const article = document.createElement('article');
     article.className = 'source-card';
@@ -119,7 +121,7 @@ NEW.addEventListener('click', () => {
   DOCUMENT_EMPTY.hidden = false;
   DOCUMENT_EMPTY.textContent = 'Select a source or an answer citation to read its local documentation here.';
   SOURCE_CONTEXT.textContent = 'Sources will appear after your first question.';
-  OPEN_DOCUMENT.href = new URL('../docs/', import.meta.url).href;
+  OPEN_DOCUMENT.href = documentsUrl.href;
   QUERY.value = '';
   showPanel('chat');
   QUERY.focus();
@@ -223,7 +225,22 @@ FORM.addEventListener('submit', async event => {
 });
 
 try {
-  vectorSearch = await VectorSearch.fromPrebuiltDataset(MANIFEST_URL, STATUS);
+  const active = await loadActiveSubject(ASSET_BASE);
+  ({ packBaseUrl, documentsUrl } = active);
+  const { subject } = active;
+  document.title = `${subject.title} | SourceDesk AI`;
+  document.documentElement.lang = subject.language;
+  document.getElementById('subject-title').textContent = subject.title;
+  document.getElementById('subject-description').textContent = subject.description;
+  document.getElementById('subject-attribution').textContent = subject.attribution;
+  document.getElementById('subject-documents').href = documentsUrl.href;
+  OPEN_DOCUMENT.href = documentsUrl.href;
+  READER.title = `${subject.title} documentation`;
+  QUERY.placeholder = subject.examples[0] || 'Ask about your documents...';
+  EMPTY.textContent = subject.examples.length ? `Try asking: ${subject.examples.join(' | ')}` :
+    'Ask about your local documents, then follow up to learn more.';
+  generator = new OfflineAnswerGenerator(ASSET_BASE.href, { answerStyle: subject.answerStyle });
+  vectorSearch = await VectorSearch.fromPrebuiltDataset(active.manifestUrl, STATUS, { packBaseUrl: packBaseUrl.href });
   const { count, partial } = vectorSearch.prebuiltData.manifest;
   STATUS.innerText = `Ready: ${count.toLocaleString()} prebuilt chunks (${vectorSearch.searchBackend})${partial ? ' (partial smoke-test dataset)' : ''}. Gemma 4 loads on the first message.`;
   BUTTON.disabled = false;

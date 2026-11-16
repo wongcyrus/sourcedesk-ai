@@ -3,7 +3,7 @@ import * as tf from '@tensorflow/tfjs';
 /**
  * A class to handle cosine similarity calculations using Google's TensorFlow.js.
  * Coded by Jason Mayes 2026.
- * Modified for kubernetes-webai-rag: normalized prebuilt matrix loading and search.
+ * Extended for SourceDesk AI: normalized prebuilt matrix loading and search.
  */
 export class CosineSimilarity {
   constructor() {

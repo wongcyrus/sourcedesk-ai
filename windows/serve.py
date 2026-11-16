@@ -5,21 +5,24 @@ import threading
 import urllib.error
 import urllib.request
 import webbrowser
+import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from subject_pack import active_subject
 
-APPLICATION = "kubernetes-webai-rag"
-URL = "http://localhost:8080/kubernetes.html"
+APPLICATION = "sourcedesk-ai"
+URL = "http://localhost:8080/"
 
 
 def check_package(root):
     root = Path(root).resolve()
     release = json.loads((root / "release.json").read_text(encoding="utf-8"))
     if release["application"] != APPLICATION:
-        raise ValueError("This is not a Kubernetes WebAI RAG package.")
-    for name in ("kubernetes.html", "OfflineVectorSearch-min.js", "data/kubernetes/manifest.json"):
+        raise ValueError("This is not a SourceDesk AI package.")
+    for name in ("index.html", "OfflineVectorSearch-min.js", "active-subject.json"):
         if not (root / name).is_file():
             raise ValueError(f"Missing application file: {name}")
     model = (root / release["generationModelPath"]).resolve()
@@ -27,7 +30,11 @@ def check_package(root):
         raise ValueError("Invalid model path in release metadata.")
     if not model.is_file() or model.stat().st_size != release["generationModel"]["bytes"]:
         raise ValueError("Missing or incomplete Gemma model. Extract the model archive into the same folder.")
-    return {key: release[key] for key in ("application", "version", "datasetVersion")}
+    embedding = (root / release["embeddingModelPath"]).resolve()
+    if not embedding.is_relative_to(root) or not embedding.is_dir() or not any(embedding.rglob("*.onnx")):
+        raise ValueError("Missing shared embedding model. Extract the model archive into the same folder.")
+    active_subject(root, release)
+    return {**{key: release[key] for key in ("application", "version")}, "installation": str(root)}
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -69,6 +76,10 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Cache-Control", "public, max-age=31536000, immutable"
                          if urlsplit(self.path).path.startswith("/models/") else "no-cache")
         self.send_header("X-Content-Type-Options", "nosniff")
+        if urlsplit(self.path).path.startswith("/subjects/") and "/docs/" in urlsplit(self.path).path:
+            self.send_header("Content-Security-Policy",
+                             "default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; "
+                             "img-src 'self' data:; base-uri 'none'; form-action 'none'")
         super().end_headers()
 
     def list_directory(self, path):
@@ -97,7 +108,7 @@ def run(root, open_browser=True):
         print(f"Cannot use localhost port 8080: {error}")
         print("Close the other server and retry. The port is fixed to preserve the browser model cache.")
         return 1
-    print(f"Kubernetes WebAI RAG v{release['version']}: {URL}\nKeep this window open. Press Ctrl+C to stop.")
+    print(f"SourceDesk AI v{release['version']}: {URL}\nKeep this window open. Press Ctrl+C to stop.")
     if open_browser:
         timer = threading.Timer(0.5, webbrowser.open, args=(URL,))
         timer.daemon = True
@@ -112,7 +123,7 @@ def run(root, open_browser=True):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Serve Kubernetes WebAI RAG on localhost.")
+    parser = argparse.ArgumentParser(description="Serve SourceDesk AI on localhost.")
     parser.add_argument("--directory", type=Path, default=Path(__file__).parent / "app")
     parser.add_argument("--no-browser", action="store_true")
     args = parser.parse_args()
