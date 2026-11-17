@@ -17,15 +17,26 @@ This project is derived from
 [Jason Mayes' VectorSearch.js](https://github.com/jasonmayes/VectorSearch.js).
 Original authorship and Apache-2.0 notices are retained.
 
-## Quick test on Windows
+## Test from a Git clone on Windows
 
-From an installed SourceDesk AI folder, double-click `Start-RAG.cmd` to start
-the local server and open the app in your browser. To test a different subject,
-drag its extracted `<id>-<version>` folder onto `Activate-Subject.cmd` first,
-then run `Start-RAG.cmd`.
+Install Node.js 24+ and Python 3.14 with the Windows `py` launcher, clone this
+repository, then double-click `Test-Python.cmd` from the repository root. On
+first run, it installs npm dependencies, downloads the shared models and Python
+tutorial, builds and activates the Python pack, then starts the browser app.
+The model download is about 2 GB; later runs reuse the prepared files.
 
-The Git checkout is source code, not a ready-made Windows installation. For a
-first-time setup, follow the installation steps below.
+This is the source/developer workflow. Do not run `windows\Start-RAG.cmd` from
+the Git checkout: that launcher requires the portable Python runtime included
+only in a packaged Windows application.
+
+## Run a downloaded Windows build
+
+This is a different workflow from cloning the repository. It applies when a
+Windows release has been published: use its application and model archives,
+then install a separate subject pack. The release assets and `Setup-RAG.cmd`
+are not present in a Git clone. See
+[Install and activate a subject on Windows](#install-and-activate-a-subject-on-windows)
+below.
 
 ## Prepare an installation
 
@@ -163,6 +174,10 @@ fresh output directory. Output directories are generated build artifacts: do
 not place original source documents in them.
 
 ## Install and activate a subject on Windows
+
+Use these steps only with published release archives. A Git clone does not
+contain the portable runtime or `Setup-RAG.cmd`; use `Test-Python.cmd` for the
+clone-based test path.
 
 Distribution consists of **three separate downloads** produced by
 the commands below. This source repository is not a ready-made Windows release.

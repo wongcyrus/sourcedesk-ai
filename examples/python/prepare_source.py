@@ -45,6 +45,7 @@ def main():
                         shutil.copyfileobj(source, destination)
         except BadZipFile as error:
             raise ValueError("Downloaded Python documentation is not a valid ZIP archive.") from error
+    (OUTPUT / ".complete").write_text("Python 3.15 tutorial\n", encoding="ascii")
     print(f"Prepared {len(files)} official Python tutorial pages in {OUTPUT}.")
 
 
