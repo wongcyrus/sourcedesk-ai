@@ -23,14 +23,14 @@ Original authorship and Apache-2.0 notices are retained.
 
 | Subject | Materials | Online installer | Classroom installer (never downloads common) |
 | --- | --- | --- | --- |
-| Python Programming | [Official Python tutorial](examples/python/subject.json) | [Install Python](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Install-python-7e90ca1e37757550-RAG.cmd) | [Classroom Python](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Classroom-python-7e90ca1e37757550-RAG.cmd) |
-| Kubernetes Documentation | [Kubernetes documentation snapshot](examples/kubernetes/subject.json), 16,483 chunks | [Install Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Install-kubernetes-bdea1cdb16cc0f64-RAG.cmd) | [Classroom Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Classroom-kubernetes-bdea1cdb16cc0f64-RAG.cmd) |
+| Python Programming | [Official Python tutorial](examples/python/subject.json) | [Install Python](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Install-python-7e90ca1e37757550-RAG.cmd) | [Classroom Python](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Classroom-python-7e90ca1e37757550-RAG.cmd) |
+| Kubernetes Documentation | [Kubernetes documentation snapshot](examples/kubernetes/subject.json), 16,483 chunks | [Install Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Install-kubernetes-bdea1cdb16cc0f64-RAG.cmd) | [Classroom Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Classroom-kubernetes-bdea1cdb16cc0f64-RAG.cmd) |
 
 ## For students: install a course on Windows
 
 Download
-[Install-python-7e90ca1e37757550-RAG.cmd](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Install-python-7e90ca1e37757550-RAG.cmd)
-from the [v0.2.1 release](https://github.com/wongcyrus/sourcedesk-ai/releases/tag/v0.2.1).
+[Install-python-7e90ca1e37757550-RAG.cmd](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Install-python-7e90ca1e37757550-RAG.cmd)
+from the [v0.2.2 release](https://github.com/wongcyrus/sourcedesk-ai/releases/tag/v0.2.2).
 Save it in the folder where you want the app installed, then double-click it.
 On Windows 11 it downloads and verifies the common app/models and Python
 subject pack, extracts them, activates the course and starts the app. No
@@ -41,13 +41,28 @@ common and subject ZIPs are also listed on the release page.
 | --- | --- | --- |
 | Installer CMD | Windows setup for one subject-pack version | Run to install or update that subject |
 | Classroom CMD | Classroom setup for one subject-pack version | Never downloads common files; uses an installed common package or a local common ZIP |
-| Common ZIP | App, portable Python and shared models | Downloaded only when missing or incomplete; reused by every subject |
+| Common ZIP | App, portable Python and shared models | Downloaded when missing, incomplete or older than the installer requires; reused by every subject |
+| App-only update ZIP | App and portable Python, without model weights or subject content | Updates an existing compatible installation without downloading models again |
 | Subject ZIP | One course's indexed content and citations | Downloaded for that subject; small compared with the common ZIP |
 
 To install a newer Python subject pack later, run its release installer again.
 It reuses the common files and downloads only the subject pack. Maintainers
 prepare and publish the installer and archives. The first install downloads
 about 2 GB; allow about 8 GiB for extraction and browser caching.
+
+### Update v0.2.1 without downloading models again
+
+Download the [v0.2.2 app-only update ZIP](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/sourcedesk-ai-0.2.2-windows-x64-app.zip).
+Close the app's browser tab and server terminal. Extract the ZIP into the
+**parent folder containing your existing `sourcedesk-ai/` directory**, choosing
+to replace existing files. Do not delete the installed directory first.
+Run `sourcedesk-ai/Start-RAG.cmd` again.
+
+This update includes the logo and VTC programme link. It preserves model files,
+installed subjects and the active-subject selection. Model versions are
+unchanged from v0.2.1. New installations still need the common package.
+Apply this update **before** running a v0.2.2 subject installer to avoid a new
+common-package download. Instructors can share the same update ZIP offline.
 
 ### Classroom setup: no common-package download
 
@@ -64,7 +79,7 @@ prepare the shared files; students never build anything.
    network folder, along with `Classroom-<subject>-<pack-hash>-RAG.cmd`.
 2. Students copy the classroom CMD into their install folder, alongside the
    existing `sourcedesk-ai/` directory or the common ZIP. For Python, the common
-   ZIP is `sourcedesk-ai-0.2.1-common-windows-x64.zip`.
+   ZIP is `sourcedesk-ai-0.2.2-common-windows-x64.zip`.
 3. Students double-click the classroom CMD. It installs and starts the subject.
 
 Put the matching subject ZIP beside the classroom CMD too for a fully offline
@@ -286,6 +301,9 @@ After preparing shared assets and building content:
 ```sh
 # One reusable common archive containing app, runtime and shared models.
 npm run package:common
+
+# App/runtime-only update ZIP; no model weights or subject files.
+npm run package:app
 
 # Subject archive plus a Windows installer that downloads, verifies, extracts
 # and activates it, reusing an existing common installation.

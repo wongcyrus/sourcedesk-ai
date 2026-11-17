@@ -1,6 +1,6 @@
 {
   "name": "sourcedesk-ai",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "type": "module",
   "description": "SourceDesk AI: offline cited answers with replaceable subject packs and shared local models",
@@ -22,6 +22,7 @@
     "demo": "npm start --",
     "package:windows": "python3 scripts/package-windows.py",
     "package:common": "python3 scripts/package-windows.py --common",
+    "package:app": "python3 scripts/package-windows.py --app",
     "package:installer": "python3 scripts/package-windows.py --installer",
     "package:classroom": "python3 scripts/package-windows.py --classroom",
     "package:subject": "python3 scripts/package-windows.py --subject",

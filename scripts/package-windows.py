@@ -184,6 +184,27 @@ def setup_script(version, archives):
     return "\r\n".join(lines) + "\r\n"
 
 
+def package_app(root, output, cache):
+    root, output = root.resolve(), output.resolve()
+    release = json.loads((root / "release.json").read_text(encoding="utf-8"))
+    project = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+    if release["application"] != NAME or release["version"] != project["version"]:
+        raise ValueError("Run npm run prepare:offline to update the release metadata.")
+    files = application_files(root, release)
+    runtime = python_runtime(cache)
+    output.mkdir(parents=True, exist_ok=True)
+    destination = output / f"{NAME}-{release['version']}-windows-x64-app.zip"
+    temporary = destination.with_suffix(".zip.download")
+    with zipfile.ZipFile(temporary, "w", allowZip64=True) as archive:
+        add_application(archive, root, files, runtime)
+    finish_archive(temporary, destination)
+    destination.with_suffix(".zip.sha256").write_text(
+        f"{digest(destination)}  {destination.name}\n", encoding="ascii"
+    )
+    print(f"{destination}: application update with portable runtime; no models or subject files.")
+    return destination
+
+
 def package(root, output, cache):
     root, output = root.resolve(), output.resolve()
     release = json.loads((root / "release.json").read_text(encoding="utf-8"))
@@ -191,19 +212,11 @@ def package(root, output, cache):
     if release["application"] != NAME or release["version"] != project["version"]:
         raise ValueError("Run npm run prepare:offline to update the release metadata.")
     models = model_files(root, release)
-    files = application_files(root, release)
-    runtime = python_runtime(cache)
-    output.mkdir(parents=True, exist_ok=True)
-    prefix = f"{NAME}-{release['version']}-windows-x64"
-    app_archive = output / f"{prefix}-app.zip"
+    app_archive = package_app(root, output, cache)
     model_archive = output / (
         f"{NAME}-models-{release['embeddingModel']['revision'][:12]}-"
         f"{release['generationModel']['sha256'][:12]}-windows-x64-model.zip"
     )
-    temporary = app_archive.with_suffix(".zip.download")
-    with zipfile.ZipFile(temporary, "w", allowZip64=True) as archive:
-        add_application(archive, root, files, runtime)
-    finish_archive(temporary, app_archive)
     temporary = model_archive.with_suffix(".zip.download")
     with zipfile.ZipFile(temporary, "w", allowZip64=True) as archive:
         add_models(archive, root, models)
@@ -379,12 +392,15 @@ if __name__ == "__main__":
     parser.add_argument("--cache", type=Path, default=ROOT / ".cache")
     subjects = parser.add_mutually_exclusive_group()
     subjects.add_argument("--common", action="store_true", help="Package the app, portable runtime and shared models.")
+    subjects.add_argument("--app", action="store_true", help="Package only the app and portable runtime, preserving installed models and subjects when extracted.")
     subjects.add_argument("--installer", type=Path, help="Create a Windows bootstrapper for an installed subject pack.")
     subjects.add_argument("--classroom", type=Path, help="Create an installer that never downloads the common package.")
     subjects.add_argument("--subject", type=Path, help="Package only this built subject folder; no models required.")
     args = parser.parse_args()
     if args.common:
         package_common(args.site, args.out, args.cache)
+    elif args.app:
+        package_app(args.site, args.out, args.cache)
     elif args.installer:
         package_student_installer(args.site, args.installer, args.out)
     elif args.classroom:

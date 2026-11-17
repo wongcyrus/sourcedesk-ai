@@ -227,6 +227,45 @@ class WindowsPackageTests(unittest.TestCase):
             self.assertFalse(cached_model.exists())
             self.assertEqual(packager.digest(downloads / model.name), packager.digest(model))
 
+    def test_app_update_preserves_existing_models_subjects_and_selection(self):
+        destination = Path(self.temporary.name) / "installation"
+        installed_app = destination / "sourcedesk-ai/app"
+        shutil.copytree(self.root, installed_app)
+        previous = dict(self.release, version="0.2.1")
+        (installed_app / "release.json").write_text(json.dumps(previous))
+        (installed_app / "index.html").write_bytes(b"old application")
+        preserved = {
+            path.relative_to(installed_app): packager.digest(path)
+            for path in installed_app.rglob("*")
+            if path.is_file() and (
+                path.relative_to(installed_app).parts[0] in ("models", "subjects")
+                or path.name == "active-subject.json"
+            )
+        }
+        shutil.rmtree(self.root / "models")
+        runtime = Path(self.temporary.name) / "python.zip"
+        with zipfile.ZipFile(runtime, "w") as archive:
+            archive.writestr("LICENSE.txt", "test license")
+            archive.writestr("python.exe", b"test runtime")
+        with patch.object(packager, "python_runtime", return_value=runtime):
+            update = packager.package_app(
+                self.root, Path(self.temporary.name) / "dist", Path(self.temporary.name) / "cache"
+            )
+        with zipfile.ZipFile(update) as archive:
+            self.assertFalse(any(
+                "/models/" in name or "/subjects/" in name or name.endswith("/active-subject.json")
+                for name in archive.namelist()
+            ))
+            archive.extractall(destination)
+        self.assertEqual((installed_app / "index.html").read_bytes(), b"ok")
+        self.assertEqual(json.loads((installed_app / "release.json").read_text()), self.release)
+        self.assertEqual((installed_app / "assets/logo-mark.svg").read_bytes(), b"ok")
+        self.assertEqual(
+            {name: packager.digest(installed_app / name) for name in preserved}, preserved
+        )
+        self.assertIn(packager.digest(update), update.with_suffix(".zip.sha256").read_text())
+        server.check_package(installed_app)
+
     def test_common_archive_is_reusable_with_separate_subject_pack(self):
         runtime = Path(self.temporary.name) / "python.zip"
         with zipfile.ZipFile(runtime, "w") as archive:
