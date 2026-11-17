@@ -276,6 +276,38 @@ class WindowsPackageTests(unittest.TestCase):
         self.assertIn('call "sourcedesk-ai\\Start-RAG.cmd"', script)
         self.assertTrue(Path(str(installer) + ".sha256").is_file())
 
+    def test_classroom_installer_never_downloads_common_and_preserves_local_archives(self):
+        output = Path(self.temporary.name) / "dist"
+        output.mkdir()
+        common = output / f"sourcedesk-ai-{self.release['version']}-common-windows-x64.zip"
+        with zipfile.ZipFile(common, "w") as archive:
+            archive.writestr("sourcedesk-ai/runtime/python.exe", b"test runtime")
+        installer = packager.package_student_installer(self.root, self.pack, output, classroom=True)
+        script = installer.read_text()
+        self.assertTrue(installer.name.startswith("Classroom-"))
+        network_commands = [line for line in script.splitlines() if "curl.exe" in line]
+        self.assertEqual(len(network_commands), 1)
+        self.assertIn(f"sourcedesk-ai-subject-{self.installed.name}.zip", network_commands[0])
+        self.assertNotIn(common.name, network_commands[0])
+        self.assertNotIn(":download_common", script)
+        self.assertIn("Classroom setup never downloads them.", script)
+        self.assertLess(script.index("goto common_ready"), script.index(":verify_local_common"))
+        self.assertIn(f'if exist "{common.name}" goto verify_local_common', script)
+        self.assertIn(f'if exist ".downloads\\{common.name}" goto verify_local_common', script)
+        self.assertIn(packager.digest(common), script)
+        self.assertIn(
+            '"%SystemRoot%\\System32\\tar.exe" -xf "%common_archive%"\nif errorlevel 1 goto failed',
+            script,
+        )
+        self.assertNotIn(f'del /q "{common.name}"', script)
+        self.assertNotIn(f'del /q ".downloads\\{common.name}"', script)
+        subject_name = f"sourcedesk-ai-subject-{self.installed.name}.zip"
+        self.assertLess(script.index(f'if exist "{subject_name}" goto verify_subject'), script.index("curl.exe"))
+        self.assertIn("Get-FileHash -LiteralPath $env:subject_archive", script)
+        self.assertNotIn(f'del /q "{subject_name}"', script)
+        self.assertIn('"sourcedesk-ai\\activate-subject.py"', script)
+        self.assertIn('call "sourcedesk-ai\\Start-RAG.cmd"', script)
+
     def test_server_suppresses_disconnected_downloads_and_keeps_serving(self):
         handler = functools.partial(server.Handler, directory=str(self.root), release=self.release)
         instance = ThreadingHTTPServer(("127.0.0.1", 0), handler)

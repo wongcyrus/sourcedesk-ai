@@ -23,6 +23,7 @@
     "package:windows": "python3 scripts/package-windows.py",
     "package:common": "python3 scripts/package-windows.py --common",
     "package:installer": "python3 scripts/package-windows.py --installer",
+    "package:classroom": "python3 scripts/package-windows.py --classroom",
     "package:subject": "python3 scripts/package-windows.py --subject",
     "test:windows": "python3 -m unittest discover -s test -p '*_test.py'"
   },

@@ -17,6 +17,16 @@ This project is derived from
 [Jason Mayes' VectorSearch.js](https://github.com/jasonmayes/VectorSearch.js).
 Original authorship and Apache-2.0 notices are retained.
 
+## Available subjects
+
+| Subject | Example materials | Student availability |
+| --- | --- | --- |
+| Python Programming | [Official Python tutorial](examples/python/subject.json) | [Windows installer](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Install-python-7e90ca1e37757550-RAG.cmd) |
+| Networking Fundamentals | [Networking reference](examples/networking/subject.json) | Example only; no student installer published |
+| Biology Basics | [Biology reference](examples/biology/subject.json) | Example only; no student installer published |
+| Mixed Documents | [Markdown, PDF and DOCX demo](examples/mixed-documents/subject.json) | Demo only; no student installer published |
+| Kubernetes Documentation | [Kubernetes adapter example](examples/kubernetes/subject.json) | Legacy example; no student installer published |
+
 ## For students: install a course on Windows
 
 Download
@@ -28,11 +38,39 @@ subject pack, extracts them, activates the course and starts the app. No
 administrator access, developer tools or manual unzip steps are needed. The
 common and subject ZIPs are also listed on the release page.
 
-The common app and models are downloaded only if they are missing or incomplete.
-To install a newer Python subject pack later, run that release's installer again;
-it reuses the common files and downloads only the small subject pack. Maintainers
+| Item | Contains | Download behavior |
+| --- | --- | --- |
+| Installer CMD | Windows setup for one subject-pack version | Run to install or update that subject |
+| Classroom CMD | Classroom setup for one subject-pack version | Never downloads common files; uses an installed common package or a local common ZIP |
+| Common ZIP | App, portable Python and shared models | Downloaded only when missing or incomplete; reused by every subject |
+| Subject ZIP | One course's indexed content and citations | Downloaded for that subject; small compared with the common ZIP |
+
+To install a newer Python subject pack later, run its release installer again.
+It reuses the common files and downloads only the subject pack. Maintainers
 prepare and publish the installer and archives. The first install downloads
 about 2 GB; allow about 8 GiB for extraction and browser caching.
+
+### Classroom setup: no common-package download
+
+The classroom installer is generated separately from the published online
+installer above. An instructor prepares it; students never build anything.
+
+| What the student already has | What classroom setup does |
+| --- | --- |
+| A complete common installation | Reuses it without downloading or extracting common files |
+| A local common ZIP from USB or a shared folder | Verifies and extracts it, keeping the ZIP for reuse |
+| Neither | Stops with instructions; never falls back to a common-package download |
+
+1. The instructor downloads the common ZIP once and shares it by USB or a local
+   network folder, along with `Classroom-<subject>-<pack-hash>-RAG.cmd`.
+2. Students copy the classroom CMD into their install folder, alongside the
+   existing `sourcedesk-ai/` directory or the common ZIP. For Python, the common
+   ZIP is `sourcedesk-ai-0.2.1-common-windows-x64.zip`.
+3. Students double-click the classroom CMD. It installs and starts the subject.
+
+Put the matching subject ZIP beside the classroom CMD too for a fully offline
+installation. Otherwise only that small subject ZIP is downloaded. Keep all
+course installers in the same install folder to reuse the common files.
 
 ## For maintainers: test a Git clone on Windows
 
@@ -137,11 +175,13 @@ support for local images and relative Markdown links. Remote links are
 disabled, remote images are omitted, and raw HTML in Markdown is displayed as
 text rather than executed.
 
-The subject examples include `networking`, `biology`, and `python`, plus the
-existing Kubernetes print-page adapter:
+The subject examples include `networking`, `biology`, `mixed-documents` and
+`python`; `kubernetes` is retained as a legacy print-page adapter:
 
 ```sh
+npm run build:subject -- --subject examples/networking/subject.json
 npm run build:subject -- --subject examples/biology/subject.json
+npm run build:subject -- --subject examples/mixed-documents/subject.json
 npm run build:subject -- --subject examples/python/subject.json
 npm run build:subject -- --subject examples/kubernetes/subject.json
 ```
@@ -242,6 +282,10 @@ npm run package:common
 # Subject archive plus a Windows installer that downloads, verifies, extracts
 # and activates it, reusing an existing common installation.
 npm run package:installer -- data/python
+
+# Classroom variant: reuse installed common files or a local common ZIP.
+# Never downloads the common package. Also reuses a local subject ZIP.
+npm run package:classroom -- data/python
 
 # Subject content archive; does not include app or model weights.
 npm run package:subject -- data/python

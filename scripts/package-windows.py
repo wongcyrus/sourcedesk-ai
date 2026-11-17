@@ -242,7 +242,7 @@ def package_common(root, output, cache):
     return destination
 
 
-def student_installer_script(release, common, common_hash, subject, subject_archive, subject_hash):
+def student_installer_script(release, common, common_hash, subject, subject_archive, subject_hash, *, classroom=False):
     version = release["version"]
     base = f"https://github.com/wongcyrus/{NAME}/releases/download/v{version}"
     common_name = common.name
@@ -267,24 +267,46 @@ def student_installer_script(release, common, common_hash, subject, subject_arch
         "-or !$onnx -or !$ort -or !$lm) { exit 1 }; "
         "exit 0 } catch { exit 1 }\"",
         "if not errorlevel 1 goto common_ready",
-        f'if not exist ".downloads\\{common_name}" goto download_common',
-        '"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
-        f"\"$ErrorActionPreference='Stop'; $h=(Get-FileHash -LiteralPath '.downloads\\{common_name}' -Algorithm SHA256).Hash; "
-        f"if ($h -ne '{common_hash}') {{ exit 1 }}\"",
-        "if not errorlevel 1 goto extract_common",
-        f'del /q ".downloads\\{common_name}"',
-        ":download_common",
-        f'echo Downloading the common app and models ({version})...',
-        f'"%SystemRoot%\\System32\\curl.exe" --fail --location --retry 3 --output ".downloads\\{common_name}" "{base}/{common_name}"',
-        "if errorlevel 1 goto failed",
-        '"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
-        f"\"$ErrorActionPreference='Stop'; $h=(Get-FileHash -LiteralPath '.downloads\\{common_name}' -Algorithm SHA256).Hash; "
-        f"if ($h -ne '{common_hash}') {{ exit 1 }}\"",
-        "if errorlevel 1 goto failed",
-        ":extract_common",
-        f'"%SystemRoot%\\System32\\tar.exe" -xf ".downloads\\{common_name}"',
-        "if errorlevel 1 goto failed",
-        f'del /q ".downloads\\{common_name}"',
+    ]
+    if classroom:
+        lines += [
+            f'set "common_archive={common_name}"',
+            f'if exist "{common_name}" goto verify_local_common',
+            f'set "common_archive=.downloads\\{common_name}"',
+            f'if exist ".downloads\\{common_name}" goto verify_local_common',
+            "echo Common files are missing or incomplete. Classroom setup never downloads them.",
+            f"echo Copy {common_name} from your instructor beside this installer and run it again.",
+            "goto failed",
+            ":verify_local_common",
+            '"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
+            f"\"$ErrorActionPreference='Stop'; $h=(Get-FileHash -LiteralPath $env:common_archive -Algorithm SHA256).Hash; "
+            f"if ($h -ne '{common_hash}') {{ exit 1 }}\"",
+            "if errorlevel 1 goto failed",
+            '"%SystemRoot%\\System32\\tar.exe" -xf "%common_archive%"',
+            "if errorlevel 1 goto failed",
+        ]
+    else:
+        lines += [
+            f'if not exist ".downloads\\{common_name}" goto download_common',
+            '"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
+            f"\"$ErrorActionPreference='Stop'; $h=(Get-FileHash -LiteralPath '.downloads\\{common_name}' -Algorithm SHA256).Hash; "
+            f"if ($h -ne '{common_hash}') {{ exit 1 }}\"",
+            "if not errorlevel 1 goto extract_common",
+            f'del /q ".downloads\\{common_name}"',
+            ":download_common",
+            f'echo Downloading the common app and models ({version})...',
+            f'"%SystemRoot%\\System32\\curl.exe" --fail --location --retry 3 --output ".downloads\\{common_name}" "{base}/{common_name}"',
+            "if errorlevel 1 goto failed",
+            '"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
+            f"\"$ErrorActionPreference='Stop'; $h=(Get-FileHash -LiteralPath '.downloads\\{common_name}' -Algorithm SHA256).Hash; "
+            f"if ($h -ne '{common_hash}') {{ exit 1 }}\"",
+            "if errorlevel 1 goto failed",
+            ":extract_common",
+            f'"%SystemRoot%\\System32\\tar.exe" -xf ".downloads\\{common_name}"',
+            "if errorlevel 1 goto failed",
+            f'del /q ".downloads\\{common_name}"',
+        ]
+    lines += [
         ":common_ready",
         f'"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
         f"\"$ErrorActionPreference='Stop'; try {{ "
@@ -293,17 +315,21 @@ def student_installer_script(release, common, common_hash, subject, subject_arch
         f"!(Test-Path -LiteralPath 'sourcedesk-ai\\app\\subjects\\{folder}\\subject.json')) {{ exit 1 }}; "
         "exit 0 } catch { exit 1 }\"",
         "if not errorlevel 1 goto launch",
-        f'if exist ".downloads\\{subject_name}" del /q ".downloads\\{subject_name}"',
+        f'set "subject_archive={subject_name}"',
+        f'if exist "{subject_name}" goto verify_subject',
+        f'set "subject_archive=.downloads\\{subject_name}"',
+        f'if exist ".downloads\\{subject_name}" goto verify_subject',
         f'echo Downloading the {subject["id"]} subject pack...',
         f'"%SystemRoot%\\System32\\curl.exe" --fail --location --retry 3 --output ".downloads\\{subject_name}" "{base}/{subject_name}"',
         "if errorlevel 1 goto failed",
+        ":verify_subject",
         '"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
-        f"\"$ErrorActionPreference='Stop'; $h=(Get-FileHash -LiteralPath '.downloads\\{subject_name}' -Algorithm SHA256).Hash; "
+        f"\"$ErrorActionPreference='Stop'; $h=(Get-FileHash -LiteralPath $env:subject_archive -Algorithm SHA256).Hash; "
         f"if ($h -ne '{subject_hash}') {{ exit 1 }}\"",
         "if errorlevel 1 goto failed",
         f'if exist ".downloads\\subject-{folder}" rmdir /s /q ".downloads\\subject-{folder}"',
         f'mkdir ".downloads\\subject-{folder}"',
-        f'"%SystemRoot%\\System32\\tar.exe" -xf ".downloads\\{subject_name}" -C ".downloads\\subject-{folder}"',
+        f'"%SystemRoot%\\System32\\tar.exe" -xf "%subject_archive%" -C ".downloads\\subject-{folder}"',
         "if errorlevel 1 goto failed",
         f'"sourcedesk-ai\\runtime\\python.exe" "sourcedesk-ai\\activate-subject.py" '
         f'--directory "sourcedesk-ai\\app" --pack ".downloads\\subject-{folder}\\{folder}"',
@@ -321,7 +347,7 @@ def student_installer_script(release, common, common_hash, subject, subject_arch
     return "\r\n".join(lines) + "\r\n"
 
 
-def package_student_installer(root, subject_root, output):
+def package_student_installer(root, subject_root, output, *, classroom=False):
     root, subject_root, output = root.resolve(), subject_root.resolve(), output.resolve()
     release = json.loads((root / "release.json").read_text(encoding="utf-8"))
     project = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
@@ -332,16 +358,17 @@ def package_student_installer(root, subject_root, output):
         raise ValueError("Build the common archive first with npm run package:common.")
     subject, _ = read_subject(subject_root, release)
     subject_archive = package_subject(subject_root, output)
-    destination = output / f"Install-{subject['id']}-{subject['version']}-RAG.cmd"
+    prefix = "Classroom" if classroom else "Install"
+    destination = output / f"{prefix}-{subject['id']}-{subject['version']}-RAG.cmd"
     script = student_installer_script(
-        release, common, digest(common), subject, subject_archive, digest(subject_archive)
+        release, common, digest(common), subject, subject_archive, digest(subject_archive), classroom=classroom
     )
     with destination.open("w", encoding="ascii", newline="") as stream:
         stream.write(script)
     (output / f"{destination.name}.sha256").write_text(
         f"{digest(destination)}  {destination.name}\n", encoding="ascii"
     )
-    print(f"{destination}: downloads, verifies, extracts and activates the {subject['title']} pack.")
+    print(f"{destination}: verifies, extracts and activates the {subject['title']} pack.")
     return destination
 
 
@@ -353,12 +380,15 @@ if __name__ == "__main__":
     subjects = parser.add_mutually_exclusive_group()
     subjects.add_argument("--common", action="store_true", help="Package the app, portable runtime and shared models.")
     subjects.add_argument("--installer", type=Path, help="Create a Windows bootstrapper for an installed subject pack.")
+    subjects.add_argument("--classroom", type=Path, help="Create an installer that never downloads the common package.")
     subjects.add_argument("--subject", type=Path, help="Package only this built subject folder; no models required.")
     args = parser.parse_args()
     if args.common:
         package_common(args.site, args.out, args.cache)
     elif args.installer:
         package_student_installer(args.site, args.installer, args.out)
+    elif args.classroom:
+        package_student_installer(args.site, args.classroom, args.out, classroom=True)
     elif args.subject:
         package_subject(args.subject, args.out)
     else:
