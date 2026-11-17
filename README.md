@@ -19,6 +19,10 @@ This project is derived from
 [Jason Mayes' VectorSearch.js](https://github.com/jasonmayes/VectorSearch.js).
 Original authorship and Apache-2.0 notices are retained.
 
+Read the [system design](#system-design), follow the
+[new-subject authoring guide](docs/adding-subject.md), or read the
+[design walkthrough and classroom story](blog/gde-medium-blog.md).
+
 ## Available subjects
 
 | Subject | Materials | Online installer | Classroom installer (never downloads common) |
@@ -71,8 +75,8 @@ prepare the shared files; students never build anything.
 
 | What the student already has | What classroom setup does |
 | --- | --- |
-| A complete common installation | Reuses it without downloading or extracting common files |
-| A local common ZIP from USB or a shared folder | Verifies and extracts it, keeping the ZIP for reuse |
+| A complete, compatible common installation | Reuses it without downloading or extracting common files |
+| A matching local common ZIP from USB or a shared folder | Verifies and extracts it, keeping the ZIP for reuse |
 | Neither | Stops with instructions; never falls back to a common-package download |
 
 1. The instructor downloads the common ZIP once and shares it by USB or a local
@@ -115,15 +119,12 @@ npm run prepare:offline
 # Download shared models, browser runtimes and component licenses once.
 npm run prepare:models
 
-# Build content on the maintainer's CPU, reusing installed embedding weights.
-npm run build:subject -- --subject examples/networking/subject.json
-
 # Prepare and build the official Python tutorial as a separate subject pack.
 npm run prepare:python-source
 npm run build:subject -- --subject examples/python/subject.json
 
 # Validate, install and activate the completed content pack.
-npm run activate:subject -- --pack data/networking
+npm run activate:subject -- --pack data/python
 
 npm start
 ```
@@ -139,106 +140,31 @@ after a page reload, even when weights are cached.
 
 ## Create your own subject
 
-Copy an example configuration and create a folder of source documents:
-
-```text
-my-course/
-  subject.json
-  content/
-    introduction.md
-    chapter-one.pdf
-    notes.docx
-    images/
-      diagram.png
-```
-
-```json
-{
-  "id": "my-course",
-  "title": "My Course",
-  "description": "A local reference for this course.",
-  "language": "en",
-  "attribution": "Your author and redistribution license information.",
-  "examples": ["What are the main concepts?"],
-  "answerStyle": "Explain concepts plainly with supported examples.",
-  "source": { "format": "documents", "path": "content" }
-}
-```
-
-Paths in the source configuration are relative to that configuration file.
-Use lowercase letters, digits and hyphens for the subject ID. Include only
-material you have permission to distribute; retain its attribution and license.
-The optional style preference cannot remove the application's grounding and
-citation rules.
+Adding a subject means indexing new reference material, **not training a new
+model or modifying the web app**. Follow the
+[complete authoring and publishing guide](docs/adding-subject.md) for a working
+configuration, document-format limits, retrieval checks and release steps.
 
 ```sh
 npm run build:subject -- --subject my-course/subject.json
+npm run test:retrieval -- data/my-course my-course/evaluation.json
 npm run activate:subject -- --pack data/my-course
 ```
 
-Reload the page to start a new conversation using the new subject. Old packs
-can remain installed or be removed after another pack is active. The shared
-application, weights and checksum-keyed browser cache are unchanged.
+The guide's `my-course` is an authoring template, not a published student course.
+Use `source.format: "documents"` for a local folder containing Markdown, HTML,
+text-based PDF and DOCX files. Website material must be collected locally
+first; the generic adapter is not a web crawler. Scanned PDFs require OCR.
 
-The `documents` source accepts `.md`, `.html`, `.htm`, `.pdf` and `.docx` files,
-including mixed folders. Markdown, HTML and Word headings become citation
-anchors; PDF citations target extracted-text pages. HTML is sanitized and
-internal links are rewritten to local pack pages. Safe local HTML views are
-generated for every source, so the app's reader stays the same. Packs retain
-original PDFs and Word files and offer a separate open/download link. PDF
-extraction requires selectable text; scanned pages need OCR first. Word
-conversion preserves common text, headings and tables; complex layout may
-differ from Word. DOCX embedded images are included only when safely
-representable as small supported data images. Markdown keeps the existing
-support for local images and relative Markdown links. Remote links are
-disabled, remote images are omitted, and raw HTML in Markdown is displayed as
-text rather than executed.
+After activation, reload the page to start a fresh conversation. Only the
+selected pack is searched; other installed packs remain available for later
+activation. The shared app and models do not change.
 
-The subject examples include `networking`, `biology`, `mixed-documents` and
-`python`; `kubernetes` uses the Kubernetes print-page adapter:
-
-`networking`, `biology` and `mixed-documents` are small developer samples for
-testing the builder, not complete courses or student downloads. Only published
-subjects are listed in the student-facing table above.
-
-```sh
-npm run build:subject -- --subject examples/networking/subject.json
-npm run build:subject -- --subject examples/biology/subject.json
-npm run build:subject -- --subject examples/mixed-documents/subject.json
-npm run build:subject -- --subject examples/python/subject.json
-npm run build:subject -- --subject examples/kubernetes/subject.json
-```
-
-The Python example uses the official Python 3.15 tutorial, downloaded by
-`npm run prepare:python-source` into an ignored local source directory. Its
-documentation is under the PSF License Version 2.0. Build it as an
-independently switchable pack after preparing the source. Activate it with
-`npm run activate:subject -- --pack data/python`. Only one subject is active
-at a time; activation leaves the shared application and models unchanged.
-
-Keyword tokenization currently targets English. Evaluate retrieval and answer
-quality for other languages rather than assuming equivalent results.
-
-The Kubernetes adapter also accepts `--html <snapshot>` and `--sitemap <file>`.
-It creates local pages and preserves canonical source URLs and heading anchors.
-Its importer and legacy relevance evaluator live in `examples/kubernetes/`,
-not in the shared application. Run `node examples/kubernetes/evaluate.mjs` to
-evaluate its completed dataset. It is not a requirement for other subjects.
-
-### Builder options
-
-- `--out <folder>` changes the generated pack destination (default `data/<id>`).
-- `--models <folder>` reuses an existing shared `models/` folder without copying
-  weights. If weights are absent, the pinned embedding model is downloaded into
-  `.cache/models`, reused across all builds.
-- `--batch-size 4`, `--max-tokens 512`, `--overlap-tokens 64` tune preparation.
-- `--limit N` produces a partial smoke-test corpus. Partial packs cannot be
-  activated or distributed.
-
-Embedding checkpoints are saved during a build. Repeat the same command after
-an interruption to resume. If source content or build parameters change, use a
-fresh output directory. Output directories are generated build artifacts: do
-not place original source documents in them.
+The published Python pack uses the official Python 3.15 tutorial under the PSF
+License Version 2.0. Kubernetes has a separate print-page adapter. The
+`networking`, `biology` and `mixed-documents` examples are small developer
+fixtures, not complete courses or student downloads. See the guide for
+[source adapters and builder options](docs/adding-subject.md#source-adapters-and-builder-options).
 
 ## Install and activate a subject on Windows
 
@@ -277,12 +203,13 @@ sourcedesk-ai/
     index.html
     js/
     css/
+    assets/                        # Logo and favicon
     vendor/
     models/                        # Shared across every subject
     release.json                   # Shared model compatibility metadata
     active-subject.json            # One selected subject
     subjects/
-      networking-<version>/
+      python-<pack-hash>/
         subject.json
         manifest.json
         chunks-<version>.json
@@ -338,32 +265,103 @@ require re-downloading or publishing the common package.
 Packaging creates files only; a maintainer must publish the archives before
 students can download them.
 
+For a subject-only release, reuse the **exact published common ZIP** when
+generating installers: its checksum is pinned into each CMD. Do not rebuild
+and overwrite an already published common asset. The
+[publishing guide](docs/adding-subject.md#publish-without-rebuilding-the-common-package)
+explains how to add a subject to the existing release without sending the
+models to students again.
+
 Before distribution, test relevant questions, questions unsupported by the
 materials, follow-ups, citation navigation and model-cache reuse. Repeat with
 internet disconnected on a target Windows GPU machine. Automated tests and CPU
 retrieval checks do not replace native browser/GPU acceptance testing.
 
-## Architecture and guarantees
+## System design
 
-Source adapters produce a common section format. The shared builder performs
-heading-aware chunking, pinned CPU embeddings, normalization and BM25 indexing.
-Each pack contains checksummed content and local HTML, not models or scripts.
-The browser loads only the active pack's vectors, combines semantic and keyword
-rankings, then generates cited answers using the shared local model.
+SourceDesk AI separates **preparation**, **distribution** and **student use**:
 
-Model identity, revision, dtype, dimensions and embedding prefixes must agree
-with the installed application. Changing embedding models requires re-embedding
-the corpus; changing subject content does not require different models.
+```text
+Maintainer: source documents + subject configuration
+              |
+              v
+           local HTML + heading/page sections
+              |
+              v
+           CPU embeddings + vector matrix + BM25 index
+              |
+              v
+           checksummed subject ZIP
 
-Each answer keeps its own citation mapping. Chat history exists only in the
-current tab, with bounded context; reloading after activation clears it.
-Generated HTML, arbitrary answer links and images are inert. Documents open in
-a script-disabled sandbox. Browser runtime assets are same-origin, remote model
-loading is disabled, and the application CSP blocks external connections.
+Student:   shared app/runtime/models + one active subject
+              |
+           question -> query embedding -> hybrid retrieval
+              |
+           selected passages -> local generation -> cited answer
+                                                      |
+                                                 local document reader
+```
 
-Weights also occupy browser cache storage; that cache copy is shared by
-subjects using the same model and origin. It is not a second copy per pack.
-Clearing browser data or changing origin may require caching the model again.
+### Prepare once, reuse everywhere
+
+The maintainer's builder normalizes each source into sections with local
+citation targets. It chunks the text, computes 768-dimensional EmbeddingGemma
+vectors on the CPU, and writes normalized float32 vectors and a BM25 keyword
+index. Students receive the completed index: they do not parse source files,
+embed the corpus or install developer tools.
+
+The common package contains the browser app, portable Windows Python, browser
+runtimes and shared models. A subject pack contains reference text, vectors,
+keyword postings, local HTML and checksums; PDF/DOCX sources also retain
+originals. It contains no application code or model weights.
+
+### One selected subject, one shared runtime
+
+`active-subject.json` points to `subjects/<id>-<pack-hash>/subject.json`.
+Activation validates a complete pack and its compatibility before atomically
+updating that pointer; invalid packs leave the previous selection unchanged.
+Reloading loads the new subject's title, example questions, answer style,
+dataset and reader. It does not merge subjects.
+
+At query time, the browser embeds the question and combines semantic and BM25
+rankings using reciprocal rank fusion. Gemma 4 E2B generates from the retrieved
+passages through LiteRT-LM. Recent conversation provides bounded context, not
+new evidence. Each turn keeps its own citation mapping, and references open
+the corresponding local heading or PDF text page.
+
+### Independent versions, explicit compatibility
+
+| What changes | What to prepare/distribute |
+| --- | --- |
+| Subject documents, metadata or answer style | A new content-hashed subject pack; regenerate that subject's installers |
+| App UI or runtime, with unchanged models | A new app version; compatible existing installations can use the app-only update |
+| Embedding model or preprocessing contract | Rebuild affected indexes and distribute compatible shared assets |
+
+The app uses semantic versions, currently `0.2.2`. Each subject version is a
+16-character content hash derived from metadata and checksummed files. A
+subject version does not need to equal the app version. Model identity,
+revision, dtype, dimensions and embedding prefixes must be compatible.
+An installer additionally requires a sufficiently recent common app version.
+
+### Offline does not mean no preparation or no limits
+
+Initial preparation and downloads may require internet. After all assets are
+installed, the Python server only serves local files at
+`http://localhost:8080/`; retrieval and generation happen in the browser, not
+on a cloud backend. The VTC programme link is an optional external website,
+not part of inference or an offline reference.
+
+OPFS can keep an additional on-disk copy of generation weights. It is shared
+by subjects using the same model and browser origin, not duplicated per pack.
+Changing origin or clearing browser storage can require reading the model
+again from the local server. Cache reuse does not skip GPU initialization.
+
+Chat history is kept only in the current tab. Model-output HTML, arbitrary
+answer links and images are inert; documents use a script-disabled sandbox.
+Same-origin browser assets and the application CSP restrict runtime requests.
+These measures do not make answers infallible, certify source trust or provide
+an exam lockdown system. Hardware performance varies; test the target machines
+with internet disconnected. Keyword tokenization currently targets English.
 
 See `NOTICE` and `LICENSE`. Subject materials and model/runtime components have
 their own licenses and terms, retained in the corresponding distribution.
