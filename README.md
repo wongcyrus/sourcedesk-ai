@@ -17,6 +17,16 @@ This project is derived from
 [Jason Mayes' VectorSearch.js](https://github.com/jasonmayes/VectorSearch.js).
 Original authorship and Apache-2.0 notices are retained.
 
+## Quick test on Windows
+
+From an installed SourceDesk AI folder, double-click `Start-RAG.cmd` to start
+the local server and open the app in your browser. To test a different subject,
+drag its extracted `<id>-<version>` folder onto `Activate-Subject.cmd` first,
+then run `Start-RAG.cmd`.
+
+The Git checkout is source code, not a ready-made Windows installation. For a
+first-time setup, follow the installation steps below.
+
 ## Prepare an installation
 
 These are maintainer commands, not student setup steps. Use Node.js 24+ and
