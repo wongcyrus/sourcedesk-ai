@@ -21,6 +21,8 @@
     "start": "http-server offline -a 127.0.0.1 -p 8080 -c-1 -o /",
     "demo": "npm start --",
     "package:windows": "python3 scripts/package-windows.py",
+    "package:common": "python3 scripts/package-windows.py --common",
+    "package:installer": "python3 scripts/package-windows.py --installer",
     "package:subject": "python3 scripts/package-windows.py --subject",
     "test:windows": "python3 -m unittest discover -s test -p '*_test.py'"
   },

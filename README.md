@@ -17,28 +17,29 @@ This project is derived from
 [Jason Mayes' VectorSearch.js](https://github.com/jasonmayes/VectorSearch.js).
 Original authorship and Apache-2.0 notices are retained.
 
-## Test from a Git clone on Windows
+## For students: install a course on Windows
+
+Download `Install-python-<pack-hash>-RAG.cmd` from the release, save it in the
+folder where you want the app installed, then double-click it. On Windows 11 it
+downloads and verifies the common app/models and Python subject pack, extracts
+them, activates the course and starts the app. No administrator access,
+developer tools or manual unzip steps are needed.
+
+The common app and models are downloaded only if they are missing or incomplete.
+To install a newer Python subject pack later, run that release's installer again;
+it reuses the common files and downloads only the small subject pack. Maintainers
+prepare and publish the installer and archives. The first install downloads
+about 2 GB; allow about 8 GiB for extraction and browser caching.
+
+## For maintainers: test a Git clone on Windows
 
 Install Node.js 24+ and Python 3.14 with the Windows `py` launcher, clone this
-repository, then double-click `Test-Python.cmd` from the repository root. On
-first run, it installs npm dependencies, downloads the shared models and Python
-tutorial, builds and activates the Python pack, then starts the browser app.
-The model download is about 2 GB; later runs reuse the prepared files.
+repository, then double-click `Test-Python.cmd` from the repository root. The
+batch installs dependencies, downloads shared models and tutorial sources,
+builds the Python pack, and starts the app. It is a developer test path, not a
+student setup. The prebuilt bundle is created separately as described below.
 
-This is the source/developer workflow. Do not run `windows\Start-RAG.cmd` from
-the Git checkout: that launcher requires the portable Python runtime included
-only in a packaged Windows application.
-
-## Run a downloaded Windows build
-
-This is a different workflow from cloning the repository. It applies when a
-Windows release has been published: use its application and model archives,
-then install a separate subject pack. The release assets and `Setup-RAG.cmd`
-are not present in a Git clone. See
-[Install and activate a subject on Windows](#install-and-activate-a-subject-on-windows)
-below.
-
-## Prepare an installation
+## Prepare from source (maintainers)
 
 These are maintainer commands, not student setup steps. Use Node.js 24+ and
 Python 3.14. On Windows, use `python` instead of `python3` if necessary.
@@ -175,16 +176,17 @@ not place original source documents in them.
 
 ## Install and activate a subject on Windows
 
+This workflow installs the common package and a separately downloadable
+subject pack, as described at the top.
+
 Use these steps only with published release archives. A Git clone does not
 contain the portable runtime or `Setup-RAG.cmd`; use `Test-Python.cmd` for the
 clone-based test path.
 
-Distribution consists of **three separate downloads** produced by
-the commands below. This source repository is not a ready-made Windows release.
+The common package and subject pack are separate downloads. This source
+repository is not a ready-made Windows release.
 
-1. Extract the application and model archives into the same parent folder.
-   Their `sourcedesk-ai/` directories merge. An application update can be
-   installed without replacing model files or active content.
+1. Extract the common package.
 2. Extract a subject archive. Drag its extracted `<id>-<version>` folder onto
    `sourcedesk-ai/Activate-Subject.cmd`.
 3. Run `sourcedesk-ai/Start-RAG.cmd` and keep its server window open.
@@ -231,11 +233,18 @@ target. A software GPU adapter may be too slow; check `chrome://gpu`.
 After preparing shared assets and building content:
 
 ```sh
-# Application/runtime archive + independently reusable model archive.
-npm run package:windows
+# One reusable common archive containing app, runtime and shared models.
+npm run package:common
 
-# Content-only archive: does not require the shared models to be installed.
-npm run package:subject -- data/networking
+# Subject archive plus a Windows installer that downloads, verifies, extracts
+# and activates it, reusing an existing common installation.
+npm run package:installer -- data/python
+
+# Subject content archive; does not include app or model weights.
+npm run package:subject -- data/python
+
+# Existing split app/model archives for other release workflows.
+npm run package:windows
 
 npm test
 npm run test:windows
@@ -246,13 +255,14 @@ npm run test:retrieval -- data/networking examples/networking/evaluation.json
 npm run test:retrieval -- data/python examples/python/evaluation.json
 ```
 
-Archives are written to `dist/`. The app archive contains neither subject packs
-nor weights; the model archive contains both embedding and generation weights;
-the subject archive contains neither application code nor weights. Model archive
-names are tied to pinned model identities rather than application versions.
-`Setup-RAG.cmd` downloads/verifies the shared archives from the corresponding
-GitHub release after a maintainer publishes them. It does not choose a subject.
-No packaging command commits or publishes anything.
+Archives are written to `dist/`. `package:common` creates one reusable common
+ZIP. `package:installer` creates a subject ZIP and a Windows CMD installer
+containing pinned download URLs and SHA-256 checksums. The installer skips the
+common download when a complete compatible installation exists, then extracts,
+activates and launches the subject. A subject-content update therefore does not
+require re-downloading or publishing the common package.
+Packaging creates files only; a maintainer must publish the archives before
+students can download them.
 
 Before distribution, test relevant questions, questions unsupported by the
 materials, follow-ups, citation navigation and model-cache reuse. Repeat with

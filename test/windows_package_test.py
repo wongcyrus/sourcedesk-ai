@@ -223,6 +223,59 @@ class WindowsPackageTests(unittest.TestCase):
             self.assertFalse(cached_model.exists())
             self.assertEqual(packager.digest(downloads / model.name), packager.digest(model))
 
+    def test_common_archive_is_reusable_with_separate_subject_pack(self):
+        runtime = Path(self.temporary.name) / "python.zip"
+        with zipfile.ZipFile(runtime, "w") as archive:
+            archive.writestr("LICENSE.txt", "test license")
+            archive.writestr("python.exe", b"test runtime")
+        output = Path(self.temporary.name) / "dist"
+        with patch.object(packager, "python_runtime", return_value=runtime):
+            common = packager.package_common(
+                self.root, output, Path(self.temporary.name) / "cache"
+            )
+        subject_archive = packager.package_subject(self.pack, output)
+        with zipfile.ZipFile(common) as archive:
+            names = archive.namelist()
+            app_prefix = "sourcedesk-ai/app/"
+            self.assertIn("sourcedesk-ai/Start-RAG.cmd", names)
+            self.assertIn("sourcedesk-ai/runtime/python.exe", names)
+            self.assertIn(f"{app_prefix}models/gemma/model.litertlm", names)
+            self.assertIn(f"{app_prefix}models/embedding/model.onnx", names)
+            self.assertNotIn(f"{app_prefix}active-subject.json", names)
+            self.assertFalse(any("/subjects/" in name for name in names))
+            self.assertNotIn("sourcedesk-ai/Setup-RAG.cmd", names)
+            extracted = Path(self.temporary.name) / "extracted"
+            archive.extractall(extracted)
+        subject_directory = Path(self.temporary.name) / "subject"
+        with zipfile.ZipFile(subject_archive) as archive:
+            archive.extractall(subject_directory)
+        installed_app = extracted / "sourcedesk-ai" / "app"
+        activator.activate(subject_directory / self.installed.name, installed_app)
+        server.check_package(installed_app)
+
+    def test_student_installer_downloads_only_missing_common_and_installs_subject(self):
+        runtime = Path(self.temporary.name) / "python.zip"
+        with zipfile.ZipFile(runtime, "w") as archive:
+            archive.writestr("LICENSE.txt", "test license")
+            archive.writestr("python.exe", b"test runtime")
+        output = Path(self.temporary.name) / "dist"
+        with patch.object(packager, "python_runtime", return_value=runtime):
+            common = packager.package_common(
+                self.root, output, Path(self.temporary.name) / "cache"
+            )
+        installer = packager.package_student_installer(self.root, self.pack, output)
+        script = installer.read_text()
+        subject_archive = output / f"sourcedesk-ai-subject-{self.installed.name}.zip"
+        self.assertIn(f"https://github.com/wongcyrus/sourcedesk-ai/releases/download/v{self.release['version']}/{common.name}", script)
+        self.assertIn(subject_archive.name, script)
+        self.assertIn(packager.digest(common), script)
+        self.assertIn(packager.digest(subject_archive), script)
+        self.assertIn('if not errorlevel 1 goto common_ready', script)
+        self.assertIn('tar.exe" -xf ".downloads\\', script)
+        self.assertIn('"sourcedesk-ai\\activate-subject.py"', script)
+        self.assertIn('call "sourcedesk-ai\\Start-RAG.cmd"', script)
+        self.assertTrue(Path(str(installer) + ".sha256").is_file())
+
     def test_server_suppresses_disconnected_downloads_and_keeps_serving(self):
         handler = functools.partial(server.Handler, directory=str(self.root), release=self.release)
         instance = ThreadingHTTPServer(("127.0.0.1", 0), handler)

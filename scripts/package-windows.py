@@ -106,6 +106,28 @@ def add_stream(archive, name, stream):
         shutil.copyfileobj(stream, output)
 
 
+def add_application(archive, root, files, runtime):
+    for path in files:
+        with path.open("rb") as stream:
+            add_stream(archive, f"{NAME}/app/{path.relative_to(root).as_posix()}", stream)
+    with zipfile.ZipFile(runtime) as python_zip:
+        if "LICENSE.txt" not in python_zip.namelist():
+            raise ValueError("Python runtime license is missing.")
+        for entry in sorted(python_zip.namelist()):
+            if not entry.endswith("/"):
+                with python_zip.open(entry) as stream:
+                    add_stream(archive, f"{NAME}/runtime/{entry}", stream)
+    for name in ("serve.py", "Start-RAG.cmd", "subject_pack.py", "activate-subject.py", "Activate-Subject.cmd"):
+        with (ROOT / "windows" / name).open("rb") as stream:
+            add_stream(archive, f"{NAME}/{name}", stream)
+
+
+def add_models(archive, root, models):
+    for path in models:
+        with path.open("rb") as stream:
+            add_stream(archive, f"{NAME}/app/{path.relative_to(root).as_posix()}", stream)
+
+
 def finish_archive(temporary, destination):
     if temporary.stat().st_size >= ASSET_LIMIT:
         raise ValueError(f"Release asset must be under 2 GiB: {destination.name}")
@@ -180,25 +202,11 @@ def package(root, output, cache):
     )
     temporary = app_archive.with_suffix(".zip.download")
     with zipfile.ZipFile(temporary, "w", allowZip64=True) as archive:
-        for path in files:
-            with path.open("rb") as stream:
-                add_stream(archive, f"{NAME}/app/{path.relative_to(root).as_posix()}", stream)
-        with zipfile.ZipFile(runtime) as python_zip:
-            if "LICENSE.txt" not in python_zip.namelist():
-                raise ValueError("Python runtime license is missing.")
-            for entry in sorted(python_zip.namelist()):
-                if not entry.endswith("/"):
-                    with python_zip.open(entry) as stream:
-                        add_stream(archive, f"{NAME}/runtime/{entry}", stream)
-        for name in ("serve.py", "Start-RAG.cmd", "subject_pack.py", "activate-subject.py", "Activate-Subject.cmd"):
-            with (ROOT / "windows" / name).open("rb") as stream:
-                add_stream(archive, f"{NAME}/{name}", stream)
+        add_application(archive, root, files, runtime)
     finish_archive(temporary, app_archive)
     temporary = model_archive.with_suffix(".zip.download")
     with zipfile.ZipFile(temporary, "w", allowZip64=True) as archive:
-        for path in models:
-            with path.open("rb") as stream:
-                add_stream(archive, f"{NAME}/app/{path.relative_to(root).as_posix()}", stream)
+        add_models(archive, root, models)
     finish_archive(temporary, model_archive)
     archives = [app_archive, model_archive]
     with (output / "Setup-RAG.cmd").open("w", encoding="ascii", newline="") as stream:
@@ -211,14 +219,147 @@ def package(root, output, cache):
     print("Prepared release assets only; nothing was committed or published.")
 
 
+def package_common(root, output, cache):
+    root, output = root.resolve(), output.resolve()
+    release = json.loads((root / "release.json").read_text(encoding="utf-8"))
+    project = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+    if release["application"] != NAME or release["version"] != project["version"]:
+        raise ValueError("Run npm run prepare:offline to update the release metadata.")
+    models = model_files(root, release)
+    files = application_files(root, release)
+    runtime = python_runtime(cache)
+    output.mkdir(parents=True, exist_ok=True)
+    destination = output / f"{NAME}-{release['version']}-common-windows-x64.zip"
+    temporary = destination.with_suffix(".zip.download")
+    with zipfile.ZipFile(temporary, "w", allowZip64=True) as archive:
+        add_application(archive, root, files, runtime)
+        add_models(archive, root, models)
+    finish_archive(temporary, destination)
+    (output / f"{destination.name}.sha256").write_text(
+        f"{digest(destination)}  {destination.name}\n", encoding="ascii"
+    )
+    print(f"{destination}: reusable Windows common package with app, runtime and shared models.")
+    return destination
+
+
+def student_installer_script(release, common, common_hash, subject, subject_archive, subject_hash):
+    version = release["version"]
+    base = f"https://github.com/wongcyrus/{NAME}/releases/download/v{version}"
+    common_name = common.name
+    subject_name = subject_archive.name
+    folder = f"{subject['id']}-{subject['version']}"
+    lines = [
+        "@echo off",
+        "setlocal",
+        'cd /d "%~dp0"',
+        f"echo Installing SourceDesk AI subject {subject['id']}",
+        'if not exist ".downloads" mkdir ".downloads"',
+        f'"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
+        f"\"$ErrorActionPreference='Stop'; try {{ "
+        f"$root='sourcedesk-ai\\app'; $r=Get-Content -Raw (Join-Path $root 'release.json') | ConvertFrom-Json; "
+        "$m=Join-Path $root $r.generationModelPath; $e=Join-Path $root $r.embeddingModelPath; "
+        "$onnx=Get-ChildItem -LiteralPath $e -Filter '*.onnx' -File -Recurse | Select-Object -First 1; "
+        "$ort=Get-ChildItem -LiteralPath 'sourcedesk-ai\\app\\vendor\\onnx' -Filter '*.wasm' -File | Select-Object -First 1; "
+        "$lm=Get-ChildItem -LiteralPath 'sourcedesk-ai\\app\\vendor\\litert-lm' -Filter '*.wasm' -File | Select-Object -First 1; "
+        f"if ($r.application -ne '{NAME}' -or [version]$r.version -lt [version]'{version}' -or "
+        "!(Test-Path -LiteralPath 'sourcedesk-ai\\runtime\\python.exe') -or "
+        "!(Test-Path -LiteralPath $m) -or (Get-Item -LiteralPath $m).Length -ne $r.generationModel.bytes "
+        "-or !$onnx -or !$ort -or !$lm) { exit 1 }; "
+        "exit 0 } catch { exit 1 }\"",
+        "if not errorlevel 1 goto common_ready",
+        f'if not exist ".downloads\\{common_name}" goto download_common',
+        '"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
+        f"\"$ErrorActionPreference='Stop'; $h=(Get-FileHash -LiteralPath '.downloads\\{common_name}' -Algorithm SHA256).Hash; "
+        f"if ($h -ne '{common_hash}') {{ exit 1 }}\"",
+        "if not errorlevel 1 goto extract_common",
+        f'del /q ".downloads\\{common_name}"',
+        ":download_common",
+        f'echo Downloading the common app and models ({version})...',
+        f'"%SystemRoot%\\System32\\curl.exe" --fail --location --retry 3 --output ".downloads\\{common_name}" "{base}/{common_name}"',
+        "if errorlevel 1 goto failed",
+        '"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
+        f"\"$ErrorActionPreference='Stop'; $h=(Get-FileHash -LiteralPath '.downloads\\{common_name}' -Algorithm SHA256).Hash; "
+        f"if ($h -ne '{common_hash}') {{ exit 1 }}\"",
+        "if errorlevel 1 goto failed",
+        ":extract_common",
+        f'"%SystemRoot%\\System32\\tar.exe" -xf ".downloads\\{common_name}"',
+        "if errorlevel 1 goto failed",
+        f'del /q ".downloads\\{common_name}"',
+        ":common_ready",
+        f'"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
+        f"\"$ErrorActionPreference='Stop'; try {{ "
+        f"$a=Get-Content -Raw 'sourcedesk-ai\\app\\active-subject.json' | ConvertFrom-Json; "
+        f"if ($a.path -ne 'subjects/{folder}/subject.json' -or "
+        f"!(Test-Path -LiteralPath 'sourcedesk-ai\\app\\subjects\\{folder}\\subject.json')) {{ exit 1 }}; "
+        "exit 0 } catch { exit 1 }\"",
+        "if not errorlevel 1 goto launch",
+        f'if exist ".downloads\\{subject_name}" del /q ".downloads\\{subject_name}"',
+        f'echo Downloading the {subject["id"]} subject pack...',
+        f'"%SystemRoot%\\System32\\curl.exe" --fail --location --retry 3 --output ".downloads\\{subject_name}" "{base}/{subject_name}"',
+        "if errorlevel 1 goto failed",
+        '"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -Command '
+        f"\"$ErrorActionPreference='Stop'; $h=(Get-FileHash -LiteralPath '.downloads\\{subject_name}' -Algorithm SHA256).Hash; "
+        f"if ($h -ne '{subject_hash}') {{ exit 1 }}\"",
+        "if errorlevel 1 goto failed",
+        f'if exist ".downloads\\subject-{folder}" rmdir /s /q ".downloads\\subject-{folder}"',
+        f'mkdir ".downloads\\subject-{folder}"',
+        f'"%SystemRoot%\\System32\\tar.exe" -xf ".downloads\\{subject_name}" -C ".downloads\\subject-{folder}"',
+        "if errorlevel 1 goto failed",
+        f'"sourcedesk-ai\\runtime\\python.exe" "sourcedesk-ai\\activate-subject.py" '
+        f'--directory "sourcedesk-ai\\app" --pack ".downloads\\subject-{folder}\\{folder}"',
+        "if errorlevel 1 goto failed",
+        f'del /q ".downloads\\{subject_name}"',
+        f'rmdir /s /q ".downloads\\subject-{folder}"',
+        ":launch",
+        'call "sourcedesk-ai\\Start-RAG.cmd"',
+        "exit /b %errorlevel%",
+        ":failed",
+        "echo Setup failed. Check your internet connection, disk space and Windows security notifications.",
+        "pause",
+        "exit /b 1",
+    ]
+    return "\r\n".join(lines) + "\r\n"
+
+
+def package_student_installer(root, subject_root, output):
+    root, subject_root, output = root.resolve(), subject_root.resolve(), output.resolve()
+    release = json.loads((root / "release.json").read_text(encoding="utf-8"))
+    project = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+    if release["application"] != NAME or release["version"] != project["version"]:
+        raise ValueError("Run npm run prepare:offline to update the release metadata.")
+    common = output / f"{NAME}-{release['version']}-common-windows-x64.zip"
+    if not common.is_file():
+        raise ValueError("Build the common archive first with npm run package:common.")
+    subject, _ = read_subject(subject_root, release)
+    subject_archive = package_subject(subject_root, output)
+    destination = output / f"Install-{subject['id']}-{subject['version']}-RAG.cmd"
+    script = student_installer_script(
+        release, common, digest(common), subject, subject_archive, digest(subject_archive)
+    )
+    with destination.open("w", encoding="ascii", newline="") as stream:
+        stream.write(script)
+    (output / f"{destination.name}.sha256").write_text(
+        f"{digest(destination)}  {destination.name}\n", encoding="ascii"
+    )
+    print(f"{destination}: downloads, verifies, extracts and activates the {subject['title']} pack.")
+    return destination
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Package a complete offline site for Windows 11 x64.")
     parser.add_argument("--site", type=Path, default=ROOT / "offline")
     parser.add_argument("--out", type=Path, default=ROOT / "dist")
     parser.add_argument("--cache", type=Path, default=ROOT / ".cache")
-    parser.add_argument("--subject", type=Path, help="Package only this built subject folder; no models required.")
+    subjects = parser.add_mutually_exclusive_group()
+    subjects.add_argument("--common", action="store_true", help="Package the app, portable runtime and shared models.")
+    subjects.add_argument("--installer", type=Path, help="Create a Windows bootstrapper for an installed subject pack.")
+    subjects.add_argument("--subject", type=Path, help="Package only this built subject folder; no models required.")
     args = parser.parse_args()
-    if args.subject:
+    if args.common:
+        package_common(args.site, args.out, args.cache)
+    elif args.installer:
+        package_student_installer(args.site, args.installer, args.out)
+    elif args.subject:
         package_subject(args.subject, args.out)
     else:
         package(args.site, args.out, args.cache)
