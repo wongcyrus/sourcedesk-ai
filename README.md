@@ -1,5 +1,7 @@
 # SourceDesk AI
 
+<img src="assets/logo-mark.svg" alt="SourceDesk AI logo" width="96" height="96">
+
 **Your documents. AI answers. Fully offline.**
 
 SourceDesk AI answers questions using a prebuilt local knowledge pack and opens
@@ -347,3 +349,7 @@ Clearing browser data or changing origin may require caching the model again.
 
 See `NOTICE` and `LICENSE`. Subject materials and model/runtime components have
 their own licenses and terms, retained in the corresponding distribution.
+
+## Related programme
+
+Explore the [Higher Diploma in Cloud and Data Centre Administration at VTC](https://www.vtc.edu.hk/admission/en/programme/it114115-higher-diploma-in-cloud-and-data-centre-administration/).

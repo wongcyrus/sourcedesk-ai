@@ -5,7 +5,7 @@ import { build } from 'esbuild';
 
 export async function buildBrowser(directory = 'offline') {
   const root = resolve(directory);
-  await Promise.all(['js', 'css', 'licenses'].map(path => mkdir(join(root, path), { recursive: true })));
+  await Promise.all(['js', 'css', 'licenses', 'assets'].map(path => mkdir(join(root, path), { recursive: true })));
   const options = {
     bundle: true, minify: true, format: 'esm', platform: 'browser',
     plugins: [{
@@ -29,6 +29,8 @@ export async function buildBrowser(directory = 'offline') {
     copyFile('web/index.html', join(root, 'index.html')),
     copyFile('web/js/app.js', join(root, 'js/app.js')),
     copyFile('web/css/style.css', join(root, 'css/style.css')),
+    copyFile('assets/logo.svg', join(root, 'assets/logo.svg')),
+    copyFile('assets/logo-mark.svg', join(root, 'assets/logo-mark.svg')),
     copyFile('LICENSE', join(root, 'licenses/project.txt')),
     copyFile('NOTICE', join(root, 'NOTICE')),
     ...[

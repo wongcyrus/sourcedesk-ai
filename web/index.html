@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'">
     <title>SourceDesk AI</title>
+    <link rel="icon" type="image/svg+xml" href="assets/logo-mark.svg">
     <link rel="stylesheet" href="css/style.css">
   </head>
   <body>
     <div id="container">
       <header>
-        <h1>SourceDesk AI</h1>
+        <h1 class="brand"><img src="assets/logo-mark.svg" alt="" width="48" height="48">SourceDesk AI</h1>
         <h2 id="subject-title"></h2>
         <p id="subject-description">Your documents. AI answers. Fully offline.</p>
         <p id="status" class="status" role="status">Loading the prebuilt dataset and query model...</p>
@@ -54,6 +55,9 @@
         Answers use bounded history and documentation excerpts. Chat is kept only in this tab; refreshing clears it.
         <span id="subject-attribution"></span>
         <a id="subject-documents">Read the offline documentation.</a></p>
+      <p class="subtitle programme-link">Related programme:
+        <a href="https://www.vtc.edu.hk/admission/en/programme/it114115-higher-diploma-in-cloud-and-data-centre-administration/"
+          target="_blank" rel="noopener noreferrer">VTC Higher Diploma in Cloud and Data Centre Administration (website)</a></p>
     </div>
     <script type="module" src="js/app.js"></script>
   </body>

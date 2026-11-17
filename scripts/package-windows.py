@@ -41,7 +41,7 @@ def application_files(root, release):
     paths = {root / name for name in (
         "index.html", "OfflineVectorSearch-min.js", "NOTICE", "release.json"
     )}
-    for directory in ("js", "css", "licenses", "vendor"):
+    for directory in ("js", "css", "licenses", "vendor", "assets"):
         folder = root / directory
         if not folder.resolve().is_relative_to(root.resolve()):
             raise ValueError(f"Invalid application directory: {directory}")

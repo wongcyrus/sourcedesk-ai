@@ -17,6 +17,9 @@ body {
 #container { max-width: 1600px; height: 100dvh; box-sizing: border-box; margin: auto; padding: 16px 20px; display: flex; flex-direction: column; }
 header { text-align: center; }
 h1 { color: var(--accent); margin: 0; font-size: 1.6rem; }
+.brand { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.brand img { flex-shrink: 0; background: #fff; border-radius: 10px; }
+.programme-link { text-align: center; margin: 4px 0; }
 header p { margin: 4px 0; }
 header p, .subtitle { color: var(--text-sub); }
 .subtitle { font-size: 0.9rem; overflow-wrap: anywhere; }

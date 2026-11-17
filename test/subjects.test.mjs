@@ -11,6 +11,27 @@ import vm from 'node:vm';
 import { parseHTML } from 'linkedom';
 import { execFileSync } from 'node:child_process';
 import { documentSource } from '../scripts/document-source.mjs';
+import { buildBrowser } from '../scripts/build-browser.mjs';
+
+test('browser build ships the local header logo and favicon with the application', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'sourcedesk-branding-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await buildBrowser(directory);
+  const { document } = parseHTML(await readFile(join(directory, 'index.html'), 'utf8'));
+  const images = [
+    document.querySelector('header h1 img').getAttribute('src'),
+    document.querySelector('link[rel="icon"]').getAttribute('href')
+  ];
+  for (const path of images) {
+    assert.ok(path.startsWith('assets/'));
+    assert.deepEqual(await readFile(join(directory, path)), await readFile(path));
+  }
+  assert.deepEqual(
+    await readFile(join(directory, 'assets/logo.svg')),
+    await readFile('assets/logo.svg')
+  );
+  assert.equal(document.querySelector('header h1').textContent, 'SourceDesk AI');
+});
 
 function activeFixture() {
   const subject = {

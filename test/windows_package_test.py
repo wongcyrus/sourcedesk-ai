@@ -51,7 +51,8 @@ class WindowsPackageTests(unittest.TestCase):
         for name in ("index.html", "OfflineVectorSearch-min.js", "NOTICE",
                      "models/gemma/README.md", "models/gemma/model.litertlm",
                      "models/embedding/model.onnx", "vendor/runtime.wasm",
-                     "js/app.js", "css/style.css", "licenses/project.txt"):
+                     "js/app.js", "css/style.css", "licenses/project.txt",
+                     "assets/logo.svg", "assets/logo-mark.svg"):
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b"ok")
@@ -120,6 +121,7 @@ class WindowsPackageTests(unittest.TestCase):
             with urllib.request.urlopen(base + "/healthz") as response:
                 self.assertEqual(json.load(response)["application"], "sourcedesk-ai")
             for name, mime, body in (("OfflineVectorSearch-min.js", "text/javascript", b"ok"),
+                                     ("assets/logo-mark.svg", "image/svg+xml", b"ok"),
                                      ("vendor/runtime.wasm", "application/wasm", b"ok"),
                                      (f"subjects/{self.installed.name}/docs/index.html", "text/html",
                                       b"<h1>Reference</h1>"),
@@ -187,6 +189,8 @@ class WindowsPackageTests(unittest.TestCase):
             names = archive.namelist()
             self.assertIn("sourcedesk-ai/runtime/LICENSE.txt", names)
             self.assertIn("sourcedesk-ai/app/vendor/runtime.wasm", names)
+            self.assertIn("sourcedesk-ai/app/assets/logo.svg", names)
+            self.assertIn("sourcedesk-ai/app/assets/logo-mark.svg", names)
             self.assertIn("sourcedesk-ai/Start-RAG.cmd", names)
             self.assertIn("sourcedesk-ai/Activate-Subject.cmd", names)
             self.assertNotIn("sourcedesk-ai/app/active-subject.json", names)
@@ -239,6 +243,7 @@ class WindowsPackageTests(unittest.TestCase):
             app_prefix = "sourcedesk-ai/app/"
             self.assertIn("sourcedesk-ai/Start-RAG.cmd", names)
             self.assertIn("sourcedesk-ai/runtime/python.exe", names)
+            self.assertIn(f"{app_prefix}assets/logo-mark.svg", names)
             self.assertIn(f"{app_prefix}models/gemma/model.litertlm", names)
             self.assertIn(f"{app_prefix}models/embedding/model.onnx", names)
             self.assertNotIn(f"{app_prefix}active-subject.json", names)
