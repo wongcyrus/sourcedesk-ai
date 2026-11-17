@@ -19,11 +19,14 @@ Original authorship and Apache-2.0 notices are retained.
 
 ## For students: install a course on Windows
 
-Download `Install-python-<pack-hash>-RAG.cmd` from the release, save it in the
-folder where you want the app installed, then double-click it. On Windows 11 it
-downloads and verifies the common app/models and Python subject pack, extracts
-them, activates the course and starts the app. No administrator access,
-developer tools or manual unzip steps are needed.
+Download
+[Install-python-7e90ca1e37757550-RAG.cmd](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Install-python-7e90ca1e37757550-RAG.cmd)
+from the [v0.2.1 release](https://github.com/wongcyrus/sourcedesk-ai/releases/tag/v0.2.1).
+Save it in the folder where you want the app installed, then double-click it.
+On Windows 11 it downloads and verifies the common app/models and Python
+subject pack, extracts them, activates the course and starts the app. No
+administrator access, developer tools or manual unzip steps are needed. The
+common and subject ZIPs are also listed on the release page.
 
 The common app and models are downloaded only if they are missing or incomplete.
 To install a newer Python subject pack later, run that release's installer again;
