@@ -19,13 +19,13 @@ Original authorship and Apache-2.0 notices are retained.
 
 ## Available subjects
 
-| Subject | Example materials | Student availability |
-| --- | --- | --- |
-| Python Programming | [Official Python tutorial](examples/python/subject.json) | [Windows installer](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Install-python-7e90ca1e37757550-RAG.cmd) |
-| Networking Fundamentals | [Networking reference](examples/networking/subject.json) | Example only; no student installer published |
-| Biology Basics | [Biology reference](examples/biology/subject.json) | Example only; no student installer published |
-| Mixed Documents | [Markdown, PDF and DOCX demo](examples/mixed-documents/subject.json) | Demo only; no student installer published |
-| Kubernetes Documentation | [Kubernetes adapter example](examples/kubernetes/subject.json) | Legacy example; no student installer published |
+| Subject | Materials | Online installer | Classroom installer (never downloads common) |
+| --- | --- | --- | --- |
+| Python Programming | [Official Python tutorial](examples/python/subject.json) | [Install Python](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Install-python-7e90ca1e37757550-RAG.cmd) | [Classroom Python](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Classroom-python-7e90ca1e37757550-RAG.cmd) |
+| Kubernetes Documentation | [Kubernetes documentation snapshot](examples/kubernetes/subject.json), 16,483 chunks | [Install Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Install-kubernetes-bdea1cdb16cc0f64-RAG.cmd) | [Classroom Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Classroom-kubernetes-bdea1cdb16cc0f64-RAG.cmd) |
+| Networking Fundamentals | [Networking reference](examples/networking/subject.json) | Not published | Not published |
+| Biology Basics | [Biology reference](examples/biology/subject.json) | Not published | Not published |
+| Mixed Documents | [Markdown, PDF and DOCX demo](examples/mixed-documents/subject.json) | Not published | Not published |
 
 ## For students: install a course on Windows
 
@@ -52,8 +52,8 @@ about 2 GB; allow about 8 GiB for extraction and browser caching.
 
 ### Classroom setup: no common-package download
 
-The classroom installer is generated separately from the published online
-installer above. An instructor prepares it; students never build anything.
+Use the classroom installer links in the subject table above. Instructors
+prepare the shared files; students never build anything.
 
 | What the student already has | What classroom setup does |
 | --- | --- |
@@ -71,6 +71,11 @@ installer above. An instructor prepares it; students never build anything.
 Put the matching subject ZIP beside the classroom CMD too for a fully offline
 installation. Otherwise only that small subject ZIP is downloaded. Keep all
 course installers in the same install folder to reuse the common files.
+
+To test reuse, run Classroom Python, then Classroom Kubernetes from that same
+folder. The Kubernetes subject pack is about 61 MB; no common files are
+downloaded or replaced. Reload the browser after switching subjects. Run
+Classroom Python again to switch back.
 
 ## For maintainers: test a Git clone on Windows
 
@@ -176,7 +181,7 @@ disabled, remote images are omitted, and raw HTML in Markdown is displayed as
 text rather than executed.
 
 The subject examples include `networking`, `biology`, `mixed-documents` and
-`python`; `kubernetes` is retained as a legacy print-page adapter:
+`python`; `kubernetes` uses the Kubernetes print-page adapter:
 
 ```sh
 npm run build:subject -- --subject examples/networking/subject.json
@@ -300,6 +305,7 @@ npm run build
 # Real CPU embedding/retrieval evaluation for example packs.
 npm run test:retrieval -- data/networking examples/networking/evaluation.json
 npm run test:retrieval -- data/python examples/python/evaluation.json
+npm run test:retrieval -- data/kubernetes examples/kubernetes/evaluation.json
 ```
 
 Archives are written to `dist/`. `package:common` creates one reusable common

@@ -1,0 +1,14 @@
+[
+  {
+    "query": "How do I create a Deployment?",
+    "expectedTitle": "Deployments"
+  },
+  {
+    "query": "How do I create a egress?",
+    "expectedTitle": "Network Policies"
+  },
+  {
+    "query": "How do I expose a service outside the cluster?",
+    "expectedTitle": "Service"
+  }
+]
