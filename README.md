@@ -23,9 +23,6 @@ Original authorship and Apache-2.0 notices are retained.
 | --- | --- | --- | --- |
 | Python Programming | [Official Python tutorial](examples/python/subject.json) | [Install Python](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Install-python-7e90ca1e37757550-RAG.cmd) | [Classroom Python](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Classroom-python-7e90ca1e37757550-RAG.cmd) |
 | Kubernetes Documentation | [Kubernetes documentation snapshot](examples/kubernetes/subject.json), 16,483 chunks | [Install Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Install-kubernetes-bdea1cdb16cc0f64-RAG.cmd) | [Classroom Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.1/Classroom-kubernetes-bdea1cdb16cc0f64-RAG.cmd) |
-| Networking Fundamentals | [Networking reference](examples/networking/subject.json) | Not published | Not published |
-| Biology Basics | [Biology reference](examples/biology/subject.json) | Not published | Not published |
-| Mixed Documents | [Markdown, PDF and DOCX demo](examples/mixed-documents/subject.json) | Not published | Not published |
 
 ## For students: install a course on Windows
 
@@ -182,6 +179,10 @@ text rather than executed.
 
 The subject examples include `networking`, `biology`, `mixed-documents` and
 `python`; `kubernetes` uses the Kubernetes print-page adapter:
+
+`networking`, `biology` and `mixed-documents` are small developer samples for
+testing the builder, not complete courses or student downloads. Only published
+subjects are listed in the student-facing table above.
 
 ```sh
 npm run build:subject -- --subject examples/networking/subject.json
