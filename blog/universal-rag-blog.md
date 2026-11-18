@@ -16,6 +16,10 @@ Now comes the next practical question from educators:
 
 That is exactly why we evolved the architecture into **[SourceDesk AI](https://github.com/wongcyrus/sourcedesk-ai)** (`sourcedesk-ai`): a universal offline RAG platform built around **replaceable subject packs** and **shared local models**.
 
+### Demo: SourceDesk AI - Build a Private Course AI for Any Subject Offline
+
+{% youtube HaK8iFzB1aM %}
+
 ---
 
 ## 1. The Core Insight: Fixed Runtime vs. Swappable Subject Cartridge
