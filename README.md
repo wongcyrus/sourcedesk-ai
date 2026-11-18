@@ -31,6 +31,28 @@ Read the [system design](#system-design), follow the
 | Kubernetes Documentation | [Kubernetes documentation snapshot](examples/kubernetes/subject.json), 16,483 chunks | [Install Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Install-kubernetes-bdea1cdb16cc0f64-RAG.cmd) | [Classroom Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Classroom-kubernetes-bdea1cdb16cc0f64-RAG.cmd) |
 | Linux Command Line | [tldr-pages Linux & common commands](examples/linux-commands/subject.json) | [Install Linux Commands](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Install-linux-commands-b43fdf502b353eb1-RAG.cmd) | [Classroom Linux Commands](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Classroom-linux-commands-b43fdf502b353eb1-RAG.cmd) |
 
+### Quickstart: Build & Publish a New Subject
+
+1. **Create `examples/<id>/`** with `subject.json`, `evaluation.json`, and your source docs in `content/`.
+2. **Build & evaluate** (pass the path to `subject.json`, and positional args for `test:retrieval`):
+   ```bash
+   npm run build:subject -- --subject examples/<id>/subject.json
+   npm run test:retrieval -- data/<id> examples/<id>/evaluation.json
+   ```
+3. **Test locally**:
+   ```bash
+   npm run prepare:offline
+   npm run activate:subject -- --pack data/<id>
+   npm start
+   ```
+4. **Package for Windows** (`package:installer` and `package:classroom` require `package:common` in `dist/` first):
+   ```bash
+   npm run package:common
+   npm run package:subject -- data/<id>
+   npm run package:installer -- data/<id>
+   npm run package:classroom -- data/<id>
+   ```
+
 ## For students: install a course on Windows
 
 Download
