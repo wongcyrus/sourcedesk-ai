@@ -29,7 +29,7 @@ Read the [system design](#system-design), follow the
 | --- | --- | --- | --- |
 | Python Programming | [Official Python tutorial](examples/python/subject.json) | [Install Python](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Install-python-7e90ca1e37757550-RAG.cmd) | [Classroom Python](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Classroom-python-7e90ca1e37757550-RAG.cmd) |
 | Kubernetes Documentation | [Kubernetes documentation snapshot](examples/kubernetes/subject.json), 16,483 chunks | [Install Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Install-kubernetes-bdea1cdb16cc0f64-RAG.cmd) | [Classroom Kubernetes](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Classroom-kubernetes-bdea1cdb16cc0f64-RAG.cmd) |
-| Linux Command Line | [tldr-pages Linux & common commands](examples/linux-commands/subject.json) | [Install Linux Commands](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Install-linux-commands-b43fdf502b353eb1-RAG.cmd) | [Classroom Linux Commands](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Classroom-linux-commands-b43fdf502b353eb1-RAG.cmd) |
+| Linux Command Line | [tldr-pages Linux & common commands](examples/linux-commands/subject.json) | Build locally (see Quickstart below) | Build locally (see Quickstart below) |
 
 ### Quickstart: Build & Publish a New Subject
 
