@@ -53,6 +53,11 @@ Read the [system design](#system-design), follow the
    npm run package:classroom -- data/<id>
    ```
 
+**One-click rebuild & package (`linux-commands`):**
+```bash
+npm run build:subject -- --subject examples/linux-commands/subject.json && npm run test:retrieval -- data/linux-commands examples/linux-commands/evaluation.json && npm run prepare:offline && npm run activate:subject -- --pack data/linux-commands && npm run package:subject -- data/linux-commands
+```
+
 ## For students: install a course on Windows
 
 Download
