@@ -1,0 +1,14 @@
+{
+  "id": "linux-commands",
+  "title": "Linux Command Line",
+  "description": "Practical Linux command-line reference powered by tldr-pages.",
+  "language": "en",
+  "attribution": "tldr-pages contributors. CC BY 4.0 License. https://github.com/tldr-pages/tldr",
+  "examples": [
+    "How do I find files modified in the last 24 hours with find?",
+    "How do I check listening TCP ports with ss?",
+    "How do I archive and compress a directory with tar?"
+  ],
+  "answerStyle": "Give a concise explanation and practical Linux command examples grounded in the reference pages, and cite the relevant command page.",
+  "source": { "format": "markdown", "path": "content" }
+}

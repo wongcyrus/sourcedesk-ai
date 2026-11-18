@@ -1,0 +1,6 @@
+[
+  { "query": "How do I find files modified in the last 24 hours with find?", "expectedTitle": "find" },
+  { "query": "How do I check listening TCP ports with ss?", "expectedTitle": "ss" },
+  { "query": "How do I archive and compress a directory with tar?", "expectedTitle": "tar" },
+  { "query": "How do I change file permissions with chmod?", "expectedTitle": "chmod" }
+]
