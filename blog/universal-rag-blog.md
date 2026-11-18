@@ -3,7 +3,7 @@ title: "Making Offline Web AI RAG Universal: Introducing SourceDesk AI & Replace
 published: false
 description: "How to turn a single-course offline RAG exam assistant into a universal, subject-agnostic platform—supporting Markdown, PDF, DOCX, and HTML with 1-command subject updates."
 tags: webai, rag, gemma, webgpu
-cover_image: https://raw.githubusercontent.com/wongcyrus/sourcedesk-ai/main/blog/images/universal-cover-gde.png
+cover_image: https://raw.githubusercontent.com/wongcyrus/sourcedesk-ai/main/blog/images/universal-cover-gde.png?v=2
 ---
 
 In the [first article](https://dev.to/gde/leveling-the-playing-field-building-a-100-offline-kubernetes-docs-rag-exam-assistant-with-web-ai-53bi), we built **[Kubernetes WebAI RAG](https://github.com/wongcyrus/kubernetes-webai-rag)**—a 100% offline, browser-based exam assistant powered by **Gemma 4 E2B**, **EmbeddingGemma**, **LiteRT-LM**, **TensorFlow.js**, and **WebGPU**.
