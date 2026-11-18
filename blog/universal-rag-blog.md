@@ -1,8 +1,10 @@
-# Making Offline Web AI RAG Universal: Introducing SourceDesk AI & Replaceable Subject Packs
-
-### How to turn a single-course offline RAG exam assistant into a universal, subject-agnostic platform—supporting Markdown, PDF, DOCX, and HTML with 1-command subject updates.
-
-![Making Offline Web AI RAG Universal — Cover Image](./images/universal-cover.png)
+---
+title: "Making Offline Web AI RAG Universal: Introducing SourceDesk AI & Replaceable Subject Packs"
+published: false
+description: "How to turn a single-course offline RAG exam assistant into a universal, subject-agnostic platform—supporting Markdown, PDF, DOCX, and HTML with 1-command subject updates."
+tags: webai, rag, gemma, webgpu
+cover_image: https://raw.githubusercontent.com/wongcyrus/sourcedesk-ai/main/blog/images/universal-cover.png
+---
 
 In the [first article](https://dev.to/gde/leveling-the-playing-field-building-a-100-offline-kubernetes-docs-rag-exam-assistant-with-web-ai-53bi), we built **[Kubernetes WebAI RAG](https://github.com/wongcyrus/kubernetes-webai-rag)**—a 100% offline, browser-based exam assistant powered by **Gemma 4 E2B**, **EmbeddingGemma**, **LiteRT-LM**, **TensorFlow.js**, and **WebGPU**.
 
@@ -20,7 +22,7 @@ That is exactly why we evolved the architecture into **[SourceDesk AI](https://g
 
 When you strip away the Kubernetes branding, the system splits cleanly into two independent layers:
 
-![Fixed Runtime vs. Swappable Subject Cartridge](./images/subject-swap-architecture.png)
+![Fixed Runtime vs. Swappable Subject Cartridge](https://raw.githubusercontent.com/wongcyrus/sourcedesk-ai/main/blog/images/subject-swap-architecture.png)
 
 ### 1. The Fixed Universal Runtime (Built Once, Shared Across All Courses)
 - **`src/CosineSimilarity.js`**: Loads any normalized `vectors-<hash>.f32` matrix into WebGPU and runs `tf.matMul` + `tf.topk` in milliseconds.
@@ -57,7 +59,7 @@ In **SourceDesk AI**, [`scripts/build-subject.mjs`](https://github.com/wongcyrus
 
 Once your course materials are ready, building, verifying, and shipping a new subject pack takes four commands:
 
-![4-Step Subject Update Pipeline](./images/easy-update-workflow.png)
+![4-Step Subject Update Pipeline](https://raw.githubusercontent.com/wongcyrus/sourcedesk-ai/main/blog/images/easy-update-workflow.png)
 
 ### Step 1: Configure & Prepare Your Subject Source
 Place your course docs (Markdown, PDF, DOCX, or HTML) in your subject folder and define the subject metadata (title, domain name for the system prompt, and sample questions).
