@@ -62,37 +62,36 @@ Once your course materials are ready, building, verifying, and shipping a new su
 ![4-Step Subject Update Pipeline](https://raw.githubusercontent.com/wongcyrus/sourcedesk-ai/main/blog/images/easy-update-workflow.png)
 
 ### Step 1: Configure & Prepare Your Subject Source
-Place your course docs (Markdown, PDF, DOCX, or HTML) in your subject folder and define the subject metadata (title, domain name for the system prompt, and sample questions).
+Place your course docs (Markdown, PDF, DOCX, or HTML) in `examples/<id>/content/` and define `examples/<id>/subject.json` (plus `evaluation.json` for retrieval checks). For example, our **[Linux Command Line](https://github.com/wongcyrus/sourcedesk-ai/blob/main/examples/linux-commands/subject.json)** pack uses open-source `tldr-pages` Markdown files.
 
 ### Step 2: Build the Subject Index (`build:subject`)
-Run the unified subject builder to chunk by headings, compute 768-dimensional `EmbeddingGemma` vectors, and generate the BM25 keyword index:
+Run the unified subject builder with the path to `subject.json` to chunk by headings, compute 768-dimensional `EmbeddingGemma` vectors, and generate the BM25 keyword index:
 
 ```bash
-npm run build:subject
+npm run build:subject -- --subject examples/linux-commands/subject.json
 ```
 
-This outputs the content-hashed `vectors-<hash>.f32` matrix and `keywords-<hash>.json` postings.
+This outputs the content-hashed `vectors-<hash>.f32` matrix and `keywords-<hash>.json` postings into `data/linux-commands/`.
 
 ### Step 3: Evaluate Retrieval Quality (`test:retrieval`)
-Before handing a new subject pack to students, you can run automated retrieval checks to verify that your chunking and hybrid search actually surface the right passages for key exam topics:
+Before handing a new subject pack to students, run automated retrieval checks against `evaluation.json` to verify that your chunking and hybrid search surface the right passages:
 
 ```bash
-npm run test:retrieval
+npm run test:retrieval -- data/linux-commands examples/linux-commands/evaluation.json
 ```
 
 ### Step 4: Sanitize, Package, and Activate (`prepare:offline` & `package:subject`)
-Sanitize the local HTML mirror (stripping `<script>`, `<form>`, `<iframe>`, and enforcing `script-src 'none'` CSP) and package **only the subject pack** for Windows 11:
+Sanitize the local HTML mirror (stripping `<script>`, `<form>`, `<iframe>`, and enforcing `script-src 'none'` CSP), activate the pack locally, and package **only the subject pack** (or one-click Windows `.cmd` installers) for students:
 
 ```bash
 npm run prepare:offline
-npm run package:subject
+npm run activate:subject -- --pack data/linux-commands
+npm run package:subject -- data/linux-commands
 ```
 
-On a classroom machine or student laptop, switching between subjects (e.g., from *Kubernetes* to *Python* or *Linux*) is a single command:
-
-```bash
-npm run activate:subject
-```
+Students can then install or switch to the **Linux Command Line** pack with a single click—reusing the shared 2 GB Gemma 4 / EmbeddingGemma runtime:
+- **One-Click Student Installer**: [Install-linux-commands-b43fdf502b353eb1-RAG.cmd](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Install-linux-commands-b43fdf502b353eb1-RAG.cmd)
+- **Classroom Installer (Offline Common)**: [Classroom-linux-commands-b43fdf502b353eb1-RAG.cmd](https://github.com/wongcyrus/sourcedesk-ai/releases/download/v0.2.2/Classroom-linux-commands-b43fdf502b353eb1-RAG.cmd)
 
 ---
 
